@@ -926,7 +926,7 @@ public:
             advance();
         return res;
     }
-    bool isType(TokenTypes type)
+    static bool isType(TokenTypes type)
     {
         vector<TokenTypes> types = {TokenTypes::TYPE_BOOL, TokenTypes::TYPE_CHAR, TokenTypes::TYPE_DOUBLE, TokenTypes::TYPE_FLOAT, TokenTypes::TYPE_INT, TokenTypes::TYPE_STRING};
         for (int i = 0; i < types.size(); i++)
@@ -936,7 +936,18 @@ public:
         }
         return 0;
     }
-
+    bool isLiteral(TokenTypes type){
+        switch(type){
+            case TokenTypes::STRING_LIT:
+            case TokenTypes::CHAR_LIT:
+            case TokenTypes::BOOL_LIT:
+            case TokenTypes::FLOAT_LIT:
+            case TokenTypes::DOUBLE_LIT:
+            case TokenTypes::INT_LIT:
+                return 1;
+        }
+        return 0;
+    }
     void pushMistak(vector<string> &arr, string s)
     {
         arr.push_back(s);
@@ -946,7 +957,7 @@ public:
         arr.errors.insert(arr.errors.begin(), arr.error);
         arr.expections.insert(arr.expections.begin(), arr.expection);
     }
-    bool isOperator(TokenTypes type)
+    static bool isOperator(TokenTypes type)
     {
         for (const auto &[first, second] : operators)
         {
@@ -977,11 +988,11 @@ public:
         }
         return j;
     }
-    template<typename T,typename U,typename G>
-    int HowManyArr(const std::vector<T>& arr,G(Parser::*funcPtr)(U param1)){
+    template<typename T>
+int HowManyArr(const std::vector<T>& arr, bool (*funcPtr)(TokenTypes)){
         int t = 0;
         for(size_t i = 0;i<arr.size();i++){
-            if((this->*funcPtr)(arr[i].type)) t++;
+            if(funcPtr(arr[i].type)) t++;
         }
         cout << t;
         return t;
@@ -1005,9 +1016,20 @@ public:
                 return TokenTypes::INT_LIT;
             case TokenTypes::TYPE_STRING:
                 return TokenTypes::STRING_LIT;
+            default:
+                return TokenTypes::UNKNOWN;
             }
         }
         return type;
+    }
+    bool matchesDeclaredType(TokenTypes declared, TokenTypes literalType)
+    {
+        if (literalType == getLitByType(declared))
+            return true;
+        if (declared == TokenTypes::TYPE_DOUBLE &&
+            (literalType == TokenTypes::DOUBLE_LIT || literalType == TokenTypes::FLOAT_LIT))
+            return true;
+        return false;
     }
     bool parseVariableDeclaration()
     {
@@ -1032,6 +1054,7 @@ public:
             else
                 varTokens.push_back(current());
             position = previous_pos;
+            bool is_init=false;
             if (varTokens.size() >= 2 && varTokens[1].type != TokenTypes::IDENTIFIER)
             {
                 pushMistak(errors, "Expected an identifier after variable definition!");
@@ -1039,6 +1062,7 @@ public:
                 pushFrontMistake(varTokens.back());
                 return 0;
             }
+            else if(varTokens[0].type==TokenTypes::IDENTIFIER&&isOperator(varTokens[1].type)&&(isIdentifier(varTokens[2].type)||isLiteral(varTokens[2].type))) is_init=true;
             if (varTokens.size() >= 3 &&varTokens[2].type != TokenTypes::EQUAL&&varTokens[2].type!=TokenTypes::SEMICOLON)
             {
                 pushMistak(errors, "Expected equal '=' after identifier definition!");
@@ -1046,49 +1070,110 @@ public:
                 pushFrontMistake(varTokens.back());
                 return 0;
             }
-            int pos = 3;
-            while (pos < varTokens.size() && (varTokens[pos].type == getLitByType(varTokens[0].type) || (isOperator(varTokens[pos].type) && varTokens[pos].type != TokenTypes::EQUAL) || isIdentifier(varTokens[pos].type)))
+            if (varTokens[2].type == TokenTypes::EQUAL)
             {
-                pos++;
+                int pos = 3;
+                bool expectOperand = true;
+                bool exprValid = true;
+                while (pos < varTokens.size() - 1)
+                {
+                    if (expectOperand)
+                    {
+                        if (matchesDeclaredType(varTokens[0].type, varTokens[pos].type) || isIdentifier(varTokens[pos].type))
+                        {
+                            pos++;
+                            expectOperand = false;
+                        }
+                        else { exprValid = false; break; }
+                    }
+                    else
+                    {
+                        if (isOperator(varTokens[pos].type) && varTokens[pos].type != TokenTypes::EQUAL)
+                        {
+                            pos++;
+                            expectOperand = true;
+                        }
+                        else { exprValid = false; break; }
+                    }
+                }
+                if (!exprValid || expectOperand || pos != varTokens.size() - 1)
+                    return 0;
             }
-            auto isOperatorPtr=isOperator;
-
-            cout << "Pos:" << HowMany(varTokens, getLitByType(varTokens[0].type)) << ", Org: " << HowManyArr(varTokens,isOperatorPtr) << endl;
-            if (varTokens[2].type!=TokenTypes::SEMICOLON&&(HowMany(varTokens, getLitByType(varTokens[0].type)) < 1||HowManyArr(varTokens,isOperatorPtr)<1)) return 0;
-            
-            if (pos != varTokens.size())
-                return 0;
+        }
+        
+    else if (current().type == TokenTypes::IDENTIFIER)
+    {
+        vector<Token> varTokens;
+        vector<string> errors;
+        vector<string> expections;
+        int previous_pos = position;
+        while (!isAtEnd() && current().type != TokenTypes::SEMICOLON)
+        {
+            varTokens.push_back(current());
+            advance();
+        }
+        if (current().type != TokenTypes::SEMICOLON)
+        {
+            pushMistak(errors, "Expected SemiCologn ';' after assignment!");
+            pushMistak(expections, ";");
+            pushFrontMistake(varTokens.front());
+            return 0;
         }
         else
+            varTokens.push_back(current());
+        position = previous_pos;
+
+        if (varTokens.size() < 3 || varTokens[1].type != TokenTypes::EQUAL)
             return 0;
-        return 1;
+
+        if (!isLiteral(varTokens[2].type) && !isIdentifier(varTokens[2].type))
+            return 0;
+
+        int pos = 3;
+        bool expectOperand = false;
+        bool exprValid = true;
+        while (pos < varTokens.size() - 1)
+        {
+            if (expectOperand)
+            {
+                if (isLiteral(varTokens[pos].type) || isIdentifier(varTokens[pos].type))
+                {
+                    pos++;
+                    expectOperand = false;
+                }
+                else { exprValid = false; break; }
+            }
+            else
+            {
+                if (isOperator(varTokens[pos].type) && varTokens[pos].type != TokenTypes::EQUAL)
+                {
+                    pos++;
+                    expectOperand = true;
+                }
+                else { exprValid = false; break; }
+            }
+        }
+        if (!exprValid || expectOperand || pos != varTokens.size() - 1)
+            return 0;
+    }
+    else
+        return 0;
+    return 1;
+
     }
 };
 
 int main()
 {
     vector<string> sources = {
-        "int x;",
-        "int x = 10;",
-        "float y = 10.5;",
-        "double z = 123.456;",
-        "string name = \"hello\";",
-        "char c = 'a';",
-        "bool ok = true;",
-
-        "int x = 10 + 5;",
-        "int x = a + 5;",
-        "int x = a + b * 2;",
-
-        "int = 10;",
-        "int x 10;",
-        "int x = ;",
-        "int x",
-        "int x = \"hello\";",
-        "string x = 10;",
-        "char x = \"a\";",
-        "bool x = 123;"};
-
+    "double z = 123.456;",
+    "double z = 1.5;",
+    "float y = 10.5;",
+    "float y = 123456789.123;",
+    "int x = 10;",
+    "double z = a + b;",
+    "double z = \"hello\";"
+};
     for (const string &source : sources)
     {
         cout << "\n========================================\n";
