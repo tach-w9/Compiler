@@ -1,9 +1,10 @@
 #include <iostream>
-#include <string>
-#include <vector>
-#include <unordered_map>
+
 #include <cctype>
 #include <cmath>
+#include <string>
+#include <unordered_map>
+#include <vector>
 using namespace std;
 
 #define MAX_FLOAT pow(10, 38)
@@ -16,6 +17,7 @@ using namespace std;
 #define MAX_DOUBLE_LENGTH 15
 #define MAX_INT_LENGTH 10
 
+
 enum class TokenTypes
 {
     TYPE_INT,
@@ -24,237 +26,373 @@ enum class TokenTypes
     TYPE_DOUBLE,
     TYPE_CHAR,
     TYPE_BOOL,
+
     INT_LIT,
     STRING_LIT,
     DOUBLE_LIT,
     FLOAT_LIT,
     CHAR_LIT,
     BOOL_LIT,
+
     IDENTIFIER,
+
     PLUS,
     MINUS,
     MULTIPLY,
     POWER,
     DIVIDE,
+
     EQUAL,
     EQUAL_EQUAL,
+
     BIGGER_THAN,
     BIGGER_THAN_OR_EQUAL,
     SMALLER_THAN,
     SMALLER_THAN_OR_EQUAL,
+
     NOT,
     NOT_EQUAL,
+
     SEMICOLON,
+
     AND,
     OR,
+
     LEFT_PAREN,
     RIGHT_PAREN,
     LEFT_BRACKET,
     RIGHT_BRACKET,
     LEFT_BRACE,
     RIGHT_BRACE,
+
     DOUBLE_POINTS,
     POINT,
     COMMA,
+
     ARROW_LEFT,
     ARROW_RIGHT,
+
     IF,
     ELSE,
     ELSE_IF,
     SWITCH,
     CASE,
+
     CLASS,
     ENUM,
     FUNCTION,
     STRUCT,
+    VOID,
+    POINTER,
+    SEA,
     UNKNOWN,
     NEW_LINE,
     SPACE,
     TAB,
     NULL_VAL,
+
     WHILE,
     FOR,
     RETURN,
+
     SINGLE_AND,
     SINGLE_OR,
+    
+    STATIC,
+    VIRTUAL,
+    PRIVATE,
+    PUBLIC,
+    
+    INLCUDE,
+    
+    COMMENT,
     BREAK,
     INVALID,
     END_OF_FILE
 };
+
 struct Token
 {
     TokenTypes type;
-    string value;
+    std::string value;
     int column;
     int line;
-    string error = "";
-    string expection = "";
-    vector<string> errors;
-    vector<string> expections;
-    Token(TokenTypes t, int c, int l, string v) : value(v), type(t), column(c), line(l) {}
+
+    std::string error = "";
+    std::string expection = "";
+
+    std::vector<std::string> errors;
+    std::vector<std::string> expections;
+
+    Token(TokenTypes t, int c, int l, std::string v)
+        : type(t), value(v), column(c), line(l)
+    {
+    }
 };
+
 string tokenTypeToString(TokenTypes type)
 {
     switch (type)
     {
-    case TokenTypes::TYPE_INT:
-        return "TYPE_INT";
-    case TokenTypes::TYPE_FLOAT:
-        return "TYPE_FLOAT";
-    case TokenTypes::TYPE_STRING:
-        return "TYPE_STRING";
-    case TokenTypes::TYPE_DOUBLE:
-        return "TYPE_DOUBLE";
-    case TokenTypes::TYPE_CHAR:
-        return "TYPE_CHAR";
-    case TokenTypes::TYPE_BOOL:
-        return "TYPE_BOOL";
+        case TokenTypes::TYPE_INT:
+            return "TYPE_INT";
 
-    case TokenTypes::INT_LIT:
-        return "INT_LIT";
-    case TokenTypes::STRING_LIT:
-        return "STRING_LIT";
-    case TokenTypes::DOUBLE_LIT:
-        return "DOUBLE_LIT";
-    case TokenTypes::FLOAT_LIT:
-        return "FLOAT_LIT";
-    case TokenTypes::CHAR_LIT:
-        return "CHAR_LIT";
-    case TokenTypes::BOOL_LIT:
-        return "BOOL_LIT";
+        case TokenTypes::TYPE_FLOAT:
+            return "TYPE_FLOAT";
 
-    case TokenTypes::IDENTIFIER:
-        return "IDENTIFIER";
+        case TokenTypes::TYPE_STRING:
+            return "TYPE_STRING";
 
-    case TokenTypes::PLUS:
-        return "PLUS";
-    case TokenTypes::MINUS:
-        return "MINUS";
-    case TokenTypes::MULTIPLY:
-        return "MULTIPLY";
-    case TokenTypes::POWER:
-        return "POWER";
-    case TokenTypes::DIVIDE:
-        return "DIVIDE";
+        case TokenTypes::TYPE_DOUBLE:
+            return "TYPE_DOUBLE";
 
-    case TokenTypes::EQUAL:
-        return "EQUAL";
-    case TokenTypes::EQUAL_EQUAL:
-        return "EQUAL_EQUAL";
+        case TokenTypes::TYPE_CHAR:
+            return "TYPE_CHAR";
 
-    case TokenTypes::BIGGER_THAN:
-        return "BIGGER_THAN";
-    case TokenTypes::BIGGER_THAN_OR_EQUAL:
-        return "BIGGER_THAN_OR_EQUAL";
+        case TokenTypes::TYPE_BOOL:
+            return "TYPE_BOOL";
 
-    case TokenTypes::SMALLER_THAN:
-        return "SMALLER_THAN";
-    case TokenTypes::SMALLER_THAN_OR_EQUAL:
-        return "SMALLER_THAN_OR_EQUAL";
 
-    case TokenTypes::NOT:
-        return "NOT";
-    case TokenTypes::NOT_EQUAL:
-        return "NOT_EQUAL";
+        case TokenTypes::INT_LIT:
+            return "INT_LIT";
 
-    case TokenTypes::SEMICOLON:
-        return "SEMICOLON";
+        case TokenTypes::STRING_LIT:
+            return "STRING_LIT";
 
-    case TokenTypes::AND:
-        return "AND";
-    case TokenTypes::OR:
-        return "OR";
+        case TokenTypes::DOUBLE_LIT:
+            return "DOUBLE_LIT";
 
-    case TokenTypes::LEFT_PAREN:
-        return "LEFT_PAREN";
-    case TokenTypes::RIGHT_PAREN:
-        return "RIGHT_PAREN";
+        case TokenTypes::FLOAT_LIT:
+            return "FLOAT_LIT";
 
-    case TokenTypes::LEFT_BRACKET:
-        return "LEFT_BRACKET";
-    case TokenTypes::RIGHT_BRACKET:
-        return "RIGHT_BRACKET";
+        case TokenTypes::CHAR_LIT:
+            return "CHAR_LIT";
 
-    case TokenTypes::LEFT_BRACE:
-        return "LEFT_BRACE";
-    case TokenTypes::RIGHT_BRACE:
-        return "RIGHT_BRACE";
+        case TokenTypes::BOOL_LIT:
+            return "BOOL_LIT";
 
-    case TokenTypes::DOUBLE_POINTS:
-        return "DOUBLE_POINTS";
-    case TokenTypes::POINT:
-        return "POINT";
-    case TokenTypes::COMMA:
-        return "COMMA";
 
-    case TokenTypes::ARROW_LEFT:
-        return "ARROW_LEFT";
-    case TokenTypes::ARROW_RIGHT:
-        return "ARROW_RIGHT";
+        case TokenTypes::IDENTIFIER:
+            return "IDENTIFIER";
 
-    case TokenTypes::IF:
-        return "IF";
-    case TokenTypes::ELSE:
-        return "ELSE";
-    case TokenTypes::ELSE_IF:
-        return "ELSE_IF";
 
-    case TokenTypes::SWITCH:
-        return "SWITCH";
-    case TokenTypes::CASE:
-        return "CASE";
+        case TokenTypes::PLUS:
+            return "PLUS";
 
-    case TokenTypes::CLASS:
-        return "CLASS";
-    case TokenTypes::ENUM:
-        return "ENUM";
-    case TokenTypes::FUNCTION:
-        return "FUNCTION";
-    case TokenTypes::STRUCT:
-        return "STRUCT";
+        case TokenTypes::MINUS:
+            return "MINUS";
 
-    case TokenTypes::UNKNOWN:
-        return "UNKNOWN";
-    case TokenTypes::NEW_LINE:
-        return "NEW_LINE";
-    case TokenTypes::SPACE:
-        return "SPACE";
-    case TokenTypes::TAB:
-        return "TAB";
-    case TokenTypes::NULL_VAL:
-        return "NULL_VAL";
+        case TokenTypes::MULTIPLY:
+            return "MULTIPLY";
 
-    case TokenTypes::WHILE:
-        return "WHILE";
-    case TokenTypes::FOR:
-        return "FOR";
-    case TokenTypes::RETURN:
-        return "RETURN";
+        case TokenTypes::POWER:
+            return "POWER";
 
-    case TokenTypes::SINGLE_AND:
-        return "SINGLE_AND";
-    case TokenTypes::SINGLE_OR:
-        return "SINGLE_OR";
+        case TokenTypes::DIVIDE:
+            return "DIVIDE";
 
-    case TokenTypes::BREAK:
-        return "BREAK";
 
-    case TokenTypes::END_OF_FILE:
-        return "END_OF_FILE";
-    case TokenTypes::INVALID:
-        return "INVALID";
+        case TokenTypes::EQUAL:
+            return "EQUAL";
+
+        case TokenTypes::EQUAL_EQUAL:
+            return "EQUAL_EQUAL";
+
+
+        case TokenTypes::BIGGER_THAN:
+            return "BIGGER_THAN";
+
+        case TokenTypes::BIGGER_THAN_OR_EQUAL:
+            return "BIGGER_THAN_OR_EQUAL";
+
+
+        case TokenTypes::SMALLER_THAN:
+            return "SMALLER_THAN";
+
+        case TokenTypes::SMALLER_THAN_OR_EQUAL:
+            return "SMALLER_THAN_OR_EQUAL";
+
+
+        case TokenTypes::NOT:
+            return "NOT";
+
+        case TokenTypes::NOT_EQUAL:
+            return "NOT_EQUAL";
+
+
+        case TokenTypes::SEMICOLON:
+            return "SEMICOLON";
+
+
+        case TokenTypes::AND:
+            return "AND";
+
+        case TokenTypes::OR:
+            return "OR";
+
+
+        case TokenTypes::LEFT_PAREN:
+            return "LEFT_PAREN";
+
+        case TokenTypes::RIGHT_PAREN:
+            return "RIGHT_PAREN";
+
+
+        case TokenTypes::LEFT_BRACKET:
+            return "LEFT_BRACKET";
+
+        case TokenTypes::RIGHT_BRACKET:
+            return "RIGHT_BRACKET";
+
+
+        case TokenTypes::LEFT_BRACE:
+            return "LEFT_BRACE";
+
+        case TokenTypes::RIGHT_BRACE:
+            return "RIGHT_BRACE";
+
+
+        case TokenTypes::DOUBLE_POINTS:
+            return "DOUBLE_POINTS";
+
+        case TokenTypes::POINT:
+            return "POINT";
+
+        case TokenTypes::COMMA:
+            return "COMMA";
+
+
+        case TokenTypes::ARROW_LEFT:
+            return "ARROW_LEFT";
+
+        case TokenTypes::ARROW_RIGHT:
+            return "ARROW_RIGHT";
+
+
+        case TokenTypes::IF:
+            return "IF";
+
+        case TokenTypes::ELSE:
+            return "ELSE";
+
+        case TokenTypes::ELSE_IF:
+            return "ELSE_IF";
+
+
+        case TokenTypes::SWITCH:
+            return "SWITCH";
+
+        case TokenTypes::CASE:
+            return "CASE";
+
+
+        case TokenTypes::CLASS:
+            return "CLASS";
+
+        case TokenTypes::ENUM:
+            return "ENUM";
+
+        case TokenTypes::FUNCTION:
+            return "FUNCTION";
+
+        case TokenTypes::STRUCT:
+            return "STRUCT";
+
+
+        case TokenTypes::UNKNOWN:
+            return "UNKNOWN";
+
+        case TokenTypes::NEW_LINE:
+            return "NEW_LINE";
+
+        case TokenTypes::SPACE:
+            return "SPACE";
+
+        case TokenTypes::TAB:
+            return "TAB";
+
+        case TokenTypes::NULL_VAL:
+            return "NULL_VAL";
+
+
+        case TokenTypes::WHILE:
+            return "WHILE";
+
+        case TokenTypes::FOR:
+            return "FOR";
+
+        case TokenTypes::RETURN:
+            return "RETURN";
+
+
+        case TokenTypes::SINGLE_AND:
+            return "SINGLE_AND";
+
+        case TokenTypes::SINGLE_OR:
+            return "SINGLE_OR";
+
+
+        case TokenTypes::BREAK:
+            return "BREAK";
+
+
+        case TokenTypes::INVALID:
+            return "INVALID";
+        case TokenTypes::VOID:
+            return "VOID";
+        case TokenTypes::POINTER:
+            return "POINTER";
+        case TokenTypes::END_OF_FILE:
+            return "END_OF_FILE";
     }
 
     return "UNKNOWN";
 }
-vector<char> alphabet = {
+
+
+// ============================================================
+// Alphabet
+// ============================================================
+
+vector<char> alphabet =
+{
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
     'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
     'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-    '_', '$'};
-vector<char> numbers_vec = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
-std::unordered_map<std::string, TokenTypes> keywords = {
+
+    '_',
+    '$'
+};
+
+
+// ============================================================
+// Numbers
+// ============================================================
+
+vector<char> numbers_vec =
+{
+    '0',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9'
+};
+
+
+// ============================================================
+// Keywords
+// ============================================================
+
+unordered_map<string, TokenTypes> keywords =
+{
+    // Types
     {"int", TokenTypes::TYPE_INT},
     {"float", TokenTypes::TYPE_FLOAT},
     {"string", TokenTypes::TYPE_STRING},
@@ -262,64 +400,105 @@ std::unordered_map<std::string, TokenTypes> keywords = {
     {"char", TokenTypes::TYPE_CHAR},
     {"bool", TokenTypes::TYPE_BOOL},
 
+    // Conditions
     {"if", TokenTypes::IF},
     {"else", TokenTypes::ELSE},
     {"else_if", TokenTypes::ELSE_IF},
+
+    // Switch
     {"switch", TokenTypes::SWITCH},
     {"case", TokenTypes::CASE},
 
+    // Declarations
     {"class", TokenTypes::CLASS},
     {"enum", TokenTypes::ENUM},
     {"function", TokenTypes::FUNCTION},
     {"struct", TokenTypes::STRUCT},
 
+    // Loops
     {"while", TokenTypes::WHILE},
     {"for", TokenTypes::FOR},
+
+    // Control
     {"return", TokenTypes::RETURN},
     {"break", TokenTypes::BREAK},
-    {"true", TokenTypes::BOOL_LIT},
-    {"false", TokenTypes::BOOL_LIT}};
 
-std::unordered_map<char, TokenTypes> operators = {
+    // Boolean
+    {"true", TokenTypes::BOOL_LIT},
+    {"false", TokenTypes::BOOL_LIT},
+    {"void", TokenTypes::VOID},
+};
+
+
+// ============================================================
+// Single Operators
+// ============================================================
+
+unordered_map<char, TokenTypes> operators =
+{
+    // Arithmetic
     {'+', TokenTypes::PLUS},
     {'-', TokenTypes::MINUS},
     {'*', TokenTypes::MULTIPLY},
     {'/', TokenTypes::DIVIDE},
+
+    // Assignment
     {'=', TokenTypes::EQUAL},
 
+    // Comparison
     {'>', TokenTypes::BIGGER_THAN},
     {'<', TokenTypes::SMALLER_THAN},
     {'!', TokenTypes::NOT},
 
+    // Separators
     {';', TokenTypes::SEMICOLON},
     {',', TokenTypes::COMMA},
     {'.', TokenTypes::POINT},
     {':', TokenTypes::DOUBLE_POINTS},
 
+    // Parentheses
     {'(', TokenTypes::LEFT_PAREN},
     {')', TokenTypes::RIGHT_PAREN},
+
+    // Brackets
     {'[', TokenTypes::LEFT_BRACKET},
     {']', TokenTypes::RIGHT_BRACKET},
+
+    // Braces
     {'{', TokenTypes::LEFT_BRACE},
     {'}', TokenTypes::RIGHT_BRACE},
 
+    // Single logical operators
     {'&', TokenTypes::SINGLE_AND},
-    {'|', TokenTypes::SINGLE_OR}};
+    {'|', TokenTypes::SINGLE_OR},
+    {'~',TokenTypes::SEA}
+};
 
-std::unordered_map<std::string, TokenTypes> double_operators = {
+
+// ============================================================
+// Double Operators
+// ============================================================
+
+unordered_map<string, TokenTypes> double_operators =
+{
     {"==", TokenTypes::EQUAL_EQUAL},
+
     {">=", TokenTypes::BIGGER_THAN_OR_EQUAL},
+
     {"<=", TokenTypes::SMALLER_THAN_OR_EQUAL},
+
     {"!=", TokenTypes::NOT_EQUAL},
 
     {"&&", TokenTypes::AND},
+
     {"||", TokenTypes::OR},
 
     {"->", TokenTypes::ARROW_RIGHT},
+
     {"<-", TokenTypes::ARROW_LEFT},
 
-    {"**", TokenTypes::POWER}};
-
+    {"**", TokenTypes::POWER}
+};
 class Lexer
 {
 private:
@@ -825,6 +1004,7 @@ public:
         token.expection = expection;
         return token;
     }
+    
     Token scanToken()
     {
         skipWhiteSpace();
@@ -888,5 +1068,194 @@ public:
             Token(TokenTypes::END_OF_FILE, column, line, ""));
 
         return tokens;
+    }
+};
+
+
+class Node{
+    public:
+    virtual ~Node()=0;
+    virtual void print(int indent)=0;
+};
+class LiteralNode: public Node{
+    public:
+    string val;
+    LiteralNode(string value):val(value){}
+    void print(int indent=0) override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "LiteralNode: " << val;
+    }
+};
+class IdentifierNode: public Node{
+    public:
+    string val;
+    IdentifierNode(string value):val(value){}
+    void print(int indent) override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "IdentifierNode: " << val;
+    }
+};
+class BinaryNode:public Node{
+    public:
+    Node* left;
+    Node* right;
+    string oper;
+    BinaryNode(string oper,Node* left,Node* right):right(right),left(left),oper(oper){}
+    void print(int indent=0) override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "BinaryNode: " << oper;
+        (*left).print(indent+1);
+        (*right).print(indent+1);
+    }
+
+};
+class UnaryNode: public Node{
+    public:
+    string val;
+    UnaryNode(string value):val(value){}
+    void print(int indent=0) override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "UnaryNode: " << val;
+    }
+};
+class ExpressionStatment: public Node{
+    public:
+    string Assignment;
+    Node* Identifier;
+    Node* Expression;
+    ExpressionStatment(Node* ident,Node* exper,string Ass):Assignment(Ass),Identifier(ident),Expression(exper){}
+    void print(int indent=0)override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  "; 
+        }
+        cout << "ExpressionStatment"<<endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "Assignment: "<< Assignment;
+        (*Identifier).print(indent+2);
+        (*Expression).print(indent+2);        
+    }
+};
+class VariableDeclarationNode: public Node{
+    public:
+    string type;
+    Node* identifier;
+    Node* Initializer;
+    VariableDeclarationNode(Node* Init,string type,Node* ident):Initializer(Init),identifier(ident),type(type){}
+    void print(int indent=0)override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "VariableDeclaration"<<endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "Type: " << type;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        (*identifier).print(indent+1);
+        cout << endl << "Initializer";
+        (*Initializer).print(indent+2);
+    }
+};
+class Initializer: public Node{
+    public:
+    Node* Expression;
+    Initializer(Node* exper):Expression(exper){}
+    void print(int indent=0)override{
+        (*Expression).print(indent);
+    }
+};
+class IfStatment: public Node{
+    public:
+    Node* Condition;
+    Node* ThenBlock;
+    IfStatment(Node* cond,Node* block):ThenBlock(block),Condition(cond){}
+    void print(int indent=0)override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "IfStatment";
+        (*Condition).print(indent+1);
+        cout << endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "ThenBranch";
+        (*ThenBlock).print(indent+2);
+    }
+};
+class Condition: public Node{
+    public:
+    Node* ConditionExpression;
+    Condition(Node* CExper):ConditionExpression(CExper){}
+    void print(int indent=0)override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "Condition";
+        (*ConditionExpression).print(indent+1);
+    }
+};
+class Block: public Node{
+    public:
+    vector<Node*> nodes;
+    void print(int indent=0){
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "Block";
+        for(int i = 0;i<nodes.size();i++){
+            (*nodes[i]).print(indent+1);
+        } 
+    }
+    void addNode(Node* node){
+        (*this).nodes.push_back(node);
+    }
+};
+class ParameterNode{
+    public:
+    
+};
+class FunctionDecalrationNode{
+    public:
+    Node* Parameters;
+};
+class Program{
+    public:
+    vector<Node*> nodes;
+    void addNode(Node* node){
+        (*this).nodes.push_back(node);
+    }
+    void print(int indent=0){
+        cout << endl << "Program";
+        for(int i = 0;i<nodes.size();i++){
+            (*nodes[i]).print(indent+1);
+        } 
+    }
+    ~Program(){
+        for(auto ptr:nodes){
+            delete[] ptr;
+        }
+        nodes.clear();
     }
 };
