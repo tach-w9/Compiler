@@ -327,9 +327,6 @@ string tokenTypeToString(TokenTypes type)
     return "UNKNOWN";
 }
 
-// ============================================================
-// Alphabet
-// ============================================================
 
 vector<char> alphabet =
     {
@@ -342,9 +339,6 @@ vector<char> alphabet =
         '_',
         '$'};
 
-// ============================================================
-// Numbers
-// ============================================================
 
 vector<char> numbers_vec =
     {
@@ -359,12 +353,9 @@ vector<char> numbers_vec =
         '8',
         '9'};
 
-// ============================================================
-// Keywords
-// ============================================================
 std::unordered_map<std::string, TokenTypes> keywords =
     {
-        // Types
+
         {"int", TokenTypes::TYPE_INT},
         {"float", TokenTypes::TYPE_FLOAT},
         {"string", TokenTypes::TYPE_STRING},
@@ -372,17 +363,14 @@ std::unordered_map<std::string, TokenTypes> keywords =
         {"char", TokenTypes::TYPE_CHAR},
         {"bool", TokenTypes::TYPE_BOOL},
         {"void", TokenTypes::VOID},
-
-        // Conditions
         {"if", TokenTypes::IF},
         {"else", TokenTypes::ELSE},
         {"else_if", TokenTypes::ELSE_IF},
 
-        // Switch
+
         {"switch", TokenTypes::SWITCH},
         {"case", TokenTypes::CASE},
 
-        // Declarations & OOP
         {"class", TokenTypes::CLASS},
         {"enum", TokenTypes::ENUM},
         {"function", TokenTypes::FUNCTION},
@@ -392,68 +380,46 @@ std::unordered_map<std::string, TokenTypes> keywords =
         {"private", TokenTypes::PRIVATE},
         {"public", TokenTypes::PUBLIC},
 
-        // Loops
+
         {"while", TokenTypes::WHILE},
         {"for", TokenTypes::FOR},
 
-        // Control flow
+
         {"return", TokenTypes::RETURN},
         {"break", TokenTypes::BREAK},
-
-        // Boolean & Literals / Identifiers
         {"true", TokenTypes::BOOL_LIT},
         {"false", TokenTypes::BOOL_LIT},
         {"null", TokenTypes::NULL_VAL},
-
-        // Preprocessor & Special
         {"include", TokenTypes::INLCUDE},
         {"pointer", TokenTypes::POINTER}};
 
-// ============================================================
-// Single Character Operators & Punctuations
-// ============================================================
-
 std::unordered_map<char, TokenTypes> operators =
     {
-        // Arithmetic
         {'+', TokenTypes::PLUS},
         {'-', TokenTypes::MINUS},
         {'*', TokenTypes::MULTIPLY},
         {'/', TokenTypes::DIVIDE},
-
-        // Assignment & Comparison
         {'=', TokenTypes::EQUAL},
         {'>', TokenTypes::BIGGER_THAN},
         {'<', TokenTypes::SMALLER_THAN},
         {'!', TokenTypes::NOT},
-
-        // Separators & Delimiters
         {';', TokenTypes::SEMICOLON},
         {',', TokenTypes::COMMA},
         {'.', TokenTypes::POINT},
         {':', TokenTypes::DOUBLE_POINTS},
-
-        // Parentheses, Brackets, Braces
         {'(', TokenTypes::LEFT_PAREN},
         {')', TokenTypes::RIGHT_PAREN},
         {'[', TokenTypes::LEFT_BRACKET},
         {']', TokenTypes::RIGHT_BRACKET},
         {'{', TokenTypes::LEFT_BRACE},
         {'}', TokenTypes::RIGHT_BRACE},
-
-        // Bitwise / Single logical operators & Tilde
         {'&', TokenTypes::SINGLE_AND},
         {'|', TokenTypes::SINGLE_OR},
         {'~', TokenTypes::SEA},
-
-        // Whitespace Characters
         {'\n', TokenTypes::NEW_LINE},
         {' ', TokenTypes::SPACE},
         {'\t', TokenTypes::TAB}};
 
-// ============================================================
-// Double Operators
-// ============================================================
 
 std::unordered_map<std::string, TokenTypes> double_operators =
     {
