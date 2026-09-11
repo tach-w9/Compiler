@@ -640,7 +640,6 @@ public:
             int howmany = HowMany(value, '.');
             if (howmany > 0 && howmany <= 1)
             {
-                // Floats can just resist for 7 decimal values
                 if (value.length() - howmany <= MAX_FLOAT_LENGTH && stof(value) > MIN_FLOAT && stof(value) < MAX_FLOAT)
                 {
                     type = TokenTypes::FLOAT_LIT;
@@ -651,7 +650,6 @@ public:
                     else if (value.length() > 2 && value[0] == '-' && value[1] == '.')
                         value.insert(1, "0");
                 }
-                // DOUBLES can just resist for 15 decimal values
                 else if (value.length() - howmany <= MAX_DOUBLE_LENGTH && stod(value) > MIN_DOUBLE && stod(value) < MAX_DOUBLE)
                 {
                     type = TokenTypes::DOUBLE_LIT;
@@ -965,7 +963,6 @@ public:
             }
             else if (inner.length() == 2 && inner[0] == '\\')
             {
-                // escape صحيح
             }
             else if (inner.length() > 1)
             {
@@ -1009,7 +1006,7 @@ public:
         else if (isOperator())
         {
             token = scanOperator();
-        } // we used current()=='"' because of the isStringstart function is designed for loop usage and not real if is string start
+        }
         else if (current() == '"' ||
                  (current() == 'R' &&
                   position + 1 < src.length() &&
@@ -1488,7 +1485,7 @@ string toString(string filename)
 
     while (getline(file, line))
     {
-        content += line + "\n"; // إضافة السطر ومتبوعاً بـ \n
+        content += line + "\n";
     }
 
     return content;
