@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 #include <fstream>
+#include <chrono>
 using namespace std;
 
 #define MAX_FLOAT pow(10, 38)
@@ -327,7 +328,6 @@ string tokenTypeToString(TokenTypes type)
     return "UNKNOWN";
 }
 
-
 vector<char> alphabet =
     {
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
@@ -338,7 +338,6 @@ vector<char> alphabet =
 
         '_',
         '$'};
-
 
 vector<char> numbers_vec =
     {
@@ -367,7 +366,6 @@ std::unordered_map<std::string, TokenTypes> keywords =
         {"else", TokenTypes::ELSE},
         {"else_if", TokenTypes::ELSE_IF},
 
-
         {"switch", TokenTypes::SWITCH},
         {"case", TokenTypes::CASE},
 
@@ -380,10 +378,8 @@ std::unordered_map<std::string, TokenTypes> keywords =
         {"private", TokenTypes::PRIVATE},
         {"public", TokenTypes::PUBLIC},
 
-
         {"while", TokenTypes::WHILE},
         {"for", TokenTypes::FOR},
-
 
         {"return", TokenTypes::RETURN},
         {"break", TokenTypes::BREAK},
@@ -419,7 +415,6 @@ std::unordered_map<char, TokenTypes> operators =
         {'\n', TokenTypes::NEW_LINE},
         {' ', TokenTypes::SPACE},
         {'\t', TokenTypes::TAB}};
-
 
 std::unordered_map<std::string, TokenTypes> double_operators =
     {
@@ -485,12 +480,7 @@ public:
     {
         if (isAtEnd())
             return 0;
-        if (isdigit(current()))
-            return 1;
-        if (current() == '-' && position + 1 <= src.length() - 1 && isdigit(src[position + 1]))
-            return 1;
-
-        return 0;
+        return isdigit(current());
     }
     bool isIdentifierStart()
     {
@@ -640,6 +630,7 @@ public:
             int howmany = HowMany(value, '.');
             if (howmany > 0 && howmany <= 1)
             {
+                // Floats can just resist for 7 decimal values
                 if (value.length() - howmany <= MAX_FLOAT_LENGTH && stof(value) > MIN_FLOAT && stof(value) < MAX_FLOAT)
                 {
                     type = TokenTypes::FLOAT_LIT;
@@ -650,6 +641,7 @@ public:
                     else if (value.length() > 2 && value[0] == '-' && value[1] == '.')
                         value.insert(1, "0");
                 }
+                // DOUBLES can just resist for 15 decimal values
                 else if (value.length() - howmany <= MAX_DOUBLE_LENGTH && stod(value) > MIN_DOUBLE && stod(value) < MAX_DOUBLE)
                 {
                     type = TokenTypes::DOUBLE_LIT;
@@ -963,6 +955,7 @@ public:
             }
             else if (inner.length() == 2 && inner[0] == '\\')
             {
+                // escape صحيح
             }
             else if (inner.length() > 1)
             {
@@ -1006,7 +999,7 @@ public:
         else if (isOperator())
         {
             token = scanOperator();
-        }
+        } // we used current()=='"' because of the isStringstart function is designed for loop usage and not real if is string start
         else if (current() == '"' ||
                  (current() == 'R' &&
                   position + 1 < src.length() &&
@@ -1122,10 +1115,8 @@ public:
 class ExpressionStatment : public Node
 {
 public:
-    Token Assignment;
-    Node *Identifier;
     Node *Expression;
-    ExpressionStatment(Node *ident, Node *exper, Token Ass) : Assignment(Ass), Identifier(ident), Expression(exper) {}
+    ExpressionStatment(Node *exper) : Expression(exper) {}
     void print(int indent = 0) override
     {
         cout << endl;
@@ -1133,13 +1124,7 @@ public:
         {
             cout << "  ";
         }
-        cout << "ExpressionStatment" << endl;
-        for (int i = 0; i < indent + 1; i++)
-        {
-            cout << "  ";
-        }
-        cout << "Assignment: " << Assignment.value;
-        (*Identifier).print(indent + 2);
+        cout << "ExpressionStatment";
         (*Expression).print(indent + 2);
     }
 };
@@ -1168,8 +1153,13 @@ public:
             cout << "  ";
         }
         (*identifier).print(indent + 1);
-        cout << endl
-             << "Initializer";
+        cout << endl;
+        for (int i = 0; i < indent + 1; i++)
+        {
+            cout << "  ";
+        }
+
+        cout << "Initializer";
         (*Initializer).print(indent + 2);
     }
 };
@@ -1183,12 +1173,18 @@ public:
         (*Expression).print(indent);
     }
 };
+class EmptyNode : public Node
+{
+public:
+    void print(int indent) override {}
+};
 class IfStatment : public Node
 {
 public:
     Node *Condition;
     Node *ThenBlock;
-    IfStatment(Node *cond, Node *block) : ThenBlock(block), Condition(cond) {}
+    Node* Elseblock;
+    IfStatment(Node *cond, Node *block,Node* elseB) : ThenBlock(block), Condition(cond),Elseblock(elseB) {}
     void print(int indent = 0) override
     {
         cout << endl;
@@ -1205,6 +1201,20 @@ public:
         }
         cout << "ThenBranch";
         (*ThenBlock).print(indent + 2);
+        (*Elseblock).print(indent+1);
+    }
+};
+class ElseStatment: public Node{
+    public:
+    Node* Block;
+    ElseStatment(Node* b):Block(b){}
+    void print(int indent = 0)override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "ElseStatment";
+        (*Block).print(indent+1);
     }
 };
 class Condition : public Node
@@ -1246,10 +1256,11 @@ public:
     }
 };
 
-class Program
+class Program : public Node
 {
 public:
     vector<Node *> nodes;
+
     void addNode(Node *node)
     {
         (*this).nodes.push_back(node);
@@ -1403,15 +1414,38 @@ public:
         }
         return 0;
     }
-    
+
+    int isComparison(TokenTypes type)
+    {
+        switch (type)
+        {
+        case TokenTypes::BIGGER_THAN:
+        case TokenTypes::SMALLER_THAN:
+        case TokenTypes::EQUAL_EQUAL:
+        case TokenTypes::SMALLER_THAN_OR_EQUAL:
+        case TokenTypes::BIGGER_THAN_OR_EQUAL:
+        case TokenTypes::NOT_EQUAL:
+            return 1;
+        }
+        return 0;
+    }
+    bool isLogicalAnd(TokenTypes type)
+    {
+        return (type == TokenTypes::AND);
+    }
+    bool isLogicalOr(TokenTypes type)
+    {
+        return (type == TokenTypes::OR);
+    }
     bool isUnary(TokenTypes type)
     {
-        return type == TokenTypes::PLUS || type == TokenTypes::MINUS;
+        return type == TokenTypes::PLUS || type == TokenTypes::MINUS || type == TokenTypes::NOT;
     }
     bool isParen(TokenTypes type)
     {
-        return (type == TokenTypes::LEFT_PAREN||type==TokenTypes::RIGHT_PAREN);
+        return (type == TokenTypes::LEFT_PAREN || type == TokenTypes::RIGHT_PAREN);
     }
+
     Node *parsePrimary()
     {
         if (isValue(peek().type))
@@ -1425,14 +1459,12 @@ public:
         else if (peek().type == TokenTypes::LEFT_PAREN)
         {
             advance();
-            Node *expression = nullptr;
-            if (isValue(peek().type)||isUnary(peek().type)||isParen(peek().type))
-            {
-                expression = parseExpression();
-            }
-            advance();
+            Node *expression = parseExpression();
+            if (peek().type == TokenTypes::RIGHT_PAREN)
+                advance();
             return expression;
         }
+        throw std::runtime_error("Unexpected token: " + peek().value + " (" + tokenTypeToString(peek().type) + ") at line " + to_string(peek().line));
     }
     Node *parseUnary()
     {
@@ -1469,9 +1501,152 @@ public:
         }
         return left;
     }
+    Node *parseComparison()
+    {
+        Node *left = parseTerm();
+        while (isComparison(peek().type))
+        {
+            Token op = peek();
+            advance();
+            Node *right = parseTerm();
+            left = new BinaryNode(op, left, right);
+        }
+        return left;
+    }
+    Node *parseLogicalAnd()
+    {
+        Node *left = parseComparison();
+        while (isLogicalAnd(peek().type))
+        {
+            Token op = peek();
+            advance();
+            Node *right = parseComparison();
+            left = new BinaryNode(op, left, right);
+        }
+        return left;
+    }
+    Node *parseLogicalOr()
+    {
+        Node *left = parseLogicalAnd();
+        while (isLogicalOr(peek().type))
+        {
+            Token op = peek();
+            advance();
+            Node *right = parseLogicalAnd();
+            left = new BinaryNode(op, left, right);
+        }
+        return left;
+    }
+    Node *parseAssignment()
+    {
+        Node *left = parseLogicalOr();
+        if (peek().type == TokenTypes::EQUAL)
+        {
+            Token op = peek();
+            advance();
+            Node *right = parseAssignment();
+            left = new BinaryNode(op, left, right);
+        }
+        return left;
+    }
     Node *parseExpression()
     {
-        return parseTerm();
+        return parseAssignment();
+    }
+    Node *parseExpressionStatment()
+    {
+        return new ExpressionStatment(parseExpression());
+    }
+    Node *parseVariableDeclaration()
+    {
+        Token type = peek();
+        advance();
+
+        if (!isIdentifier(peek().type))
+            throw std::runtime_error("Expected identifier after type definition!, Type: " + tokenTypeToString(peek().type) + " value: " + peek().value + " Line: " + to_string(peek().line) + " Col: " + to_string(peek().column));
+
+        Token ident = peek();
+        Node *identifier = new IdentifierNode(ident);
+        advance();
+
+        Node *expression = new EmptyNode();
+        if (peek().type == TokenTypes::EQUAL)
+        {
+            advance();
+            expression = parseExpression();
+        }
+        Node *initializer = new Initializer(expression);
+        return new VariableDeclarationNode(initializer, type, identifier);
+    }
+    Node *parseCondition()
+    {
+        return parseExpression();
+    }
+    Node *parseBlock()
+    {
+        advance();
+        Block *block = new Block();
+        while (peek().type != TokenTypes::RIGHT_BRACE)
+        {
+            Node *stmt = parseStatment();
+            (*block).addNode(stmt);
+            if (peek().type == TokenTypes::SEMICOLON)
+                advance();
+        }
+        advance();
+        return block;
+    }
+    Node *parseIfStatment()
+    {
+        advance();
+        if (except(TokenTypes::LEFT_PAREN))
+        {
+            Node *ConditionExpression = parseCondition();
+            Node* condition = new Condition(ConditionExpression);
+            if (except(TokenTypes::RIGHT_PAREN))
+            {
+                Node *Block = parseBlock();
+                Node* ElseBlock = new EmptyNode();
+                if(check(TokenTypes::ELSE)){
+                    advance();
+                    ElseBlock=parseElseStatment();
+                }
+                return new IfStatment(condition, Block,ElseBlock);
+                
+            }
+        }
+    }
+    Node* parseElseStatment(){
+        advance();
+        Node* block = parseBlock();
+        return new ElseStatment(block);
+    }
+    Node *parseStatment()
+    {
+        if (isType(peek().type))
+            return parseVariableDeclaration();
+        if (peek().type == TokenTypes::IF)
+            return parseIfStatment();
+        if(peek().type==TokenTypes::ELSE)
+            return parseElseStatment();
+        return parseExpressionStatment();
+    }
+    Node *parseProgram()
+    {
+        Program *program = new Program();
+        while (peek().type != TokenTypes::END_OF_FILE)
+        {
+            Node *stmt = parseStatment();
+            (*program).addNode(stmt);
+            if (peek().type == TokenTypes::SEMICOLON)
+                advance();
+            else if(!isAtEnd()&&!check(TokenTypes::RIGHT_BRACE))
+                throw std::runtime_error("Expected ';' after expression Type: " + tokenTypeToString(peek().type) + " value: " + peek().value + "Line: " + to_string(peek().line) + "Col: " + to_string(peek().column));
+        }
+        if (peek().type == TokenTypes::END_OF_FILE)
+            cout << endl
+                 << "End Of File Reached!!";
+        return program;
     }
 };
 string toString(string filename)
@@ -1485,15 +1660,18 @@ string toString(string filename)
 
     while (getline(file, line))
     {
-        content += line + "\n";
+        content += line + "\n"; // إضافة السطر ومتبوعاً بـ \n
     }
 
     return content;
 }
 int main(int argc, char *argv[])
 {
+    auto start = chrono::high_resolution_clock::now();
     string filename = argv[1];
     string source = toString(filename);
+    cout << "Source is: " << endl
+         << source << endl;
     if (source == "Not Found")
     {
         cout << "File Not Found!" << endl;
@@ -1502,7 +1680,12 @@ int main(int argc, char *argv[])
     Lexer lexer(source);
     vector<Token> tokens = lexer.tokenize();
     Parser parser(tokens);
-    Node *shiit = parser.parseExpression();
+    Node *shiit = parser.parseProgram();
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::microseconds>(end - start);
     (*shiit).print(0);
+    cout << endl
+         << endl
+         << "Duration is: " << duration.count();
     return 0;
 }
