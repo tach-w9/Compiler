@@ -364,7 +364,6 @@ std::unordered_map<std::string, TokenTypes> keywords =
         {"void", TokenTypes::VOID},
         {"if", TokenTypes::IF},
         {"else", TokenTypes::ELSE},
-        {"else_if", TokenTypes::ELSE_IF},
 
         {"switch", TokenTypes::SWITCH},
         {"case", TokenTypes::CASE},
@@ -641,7 +640,6 @@ public:
                     else if (value.length() > 2 && value[0] == '-' && value[1] == '.')
                         value.insert(1, "0");
                 }
-                // DOUBLES can just resist for 15 decimal values
                 else if (value.length() - howmany <= MAX_DOUBLE_LENGTH && stod(value) > MIN_DOUBLE && stod(value) < MAX_DOUBLE)
                 {
                     type = TokenTypes::DOUBLE_LIT;
@@ -1183,8 +1181,17 @@ class IfStatment : public Node
 public:
     Node *Condition;
     Node *ThenBlock;
-    Node* Elseblock;
-    IfStatment(Node *cond, Node *block,Node* elseB) : ThenBlock(block), Condition(cond),Elseblock(elseB) {}
+    Node *Elseblock = new EmptyNode();
+    vector<Node *> ElseIfBlocks;
+    IfStatment(Node *cond, Node *block) : ThenBlock(block), Condition(cond) {}
+    void addElseIfNode(Node *elseif)
+    {
+        ElseIfBlocks.push_back(elseif);
+    }
+    void addElseNode(Node *node)
+    {
+        Elseblock = node;
+    }
     void print(int indent = 0) override
     {
         cout << endl;
@@ -1201,20 +1208,51 @@ public:
         }
         cout << "ThenBranch";
         (*ThenBlock).print(indent + 2);
-        (*Elseblock).print(indent+1);
+        for (int i = 0; i < ElseIfBlocks.size(); i++)
+        {
+            (*ElseIfBlocks[i]).print(indent + 1);
+        }
+        (*Elseblock).print(indent + 1);
     }
 };
-class ElseStatment: public Node{
-    public:
-    Node* Block;
-    ElseStatment(Node* b):Block(b){}
-    void print(int indent = 0)override{
+class ElseIfStatment : public Node
+{
+public:
+    Node *Condition;
+    Node *ThenBlock;
+    ElseIfStatment(Node *cond, Node *block) : Condition(cond), ThenBlock(block) {}
+    void print(int indent = 0) override
+    {
         cout << endl;
-        for(int i = 0;i<indent;i++){
+        for (int i = 0; i < indent; i++)
+        {
+            cout << "  ";
+        }
+        cout << "ElseIfStatment";
+        (*Condition).print(indent + 1);
+        cout << endl;
+        for (int i = 0; i < indent + 1; i++)
+        {
+            cout << "  ";
+        }
+        cout << "ThenBranch";
+        (*ThenBlock).print(indent + 2);
+    }
+};
+class ElseStatment : public Node
+{
+public:
+    Node *Block;
+    ElseStatment(Node *b) : Block(b) {}
+    void print(int indent = 0) override
+    {
+        cout << endl;
+        for (int i = 0; i < indent; i++)
+        {
             cout << "  ";
         }
         cout << "ElseStatment";
-        (*Block).print(indent+1);
+        (*Block).print(indent + 1);
     }
 };
 class Condition : public Node
@@ -1429,6 +1467,14 @@ public:
         }
         return 0;
     }
+    int checkElseIf()
+    {
+        if (check(TokenTypes::ELSE_IF))
+            return 1;
+        if (check(TokenTypes::ELSE) && position + 1 < (int)tokens.size() && tokens[position + 1].type == TokenTypes::IF)
+            return 1;
+        return 0;
+    }
     bool isLogicalAnd(TokenTypes type)
     {
         return (type == TokenTypes::AND);
@@ -1602,23 +1648,48 @@ public:
         if (except(TokenTypes::LEFT_PAREN))
         {
             Node *ConditionExpression = parseCondition();
-            Node* condition = new Condition(ConditionExpression);
+            Node *condition = new Condition(ConditionExpression);
             if (except(TokenTypes::RIGHT_PAREN))
             {
+
                 Node *Block = parseBlock();
-                Node* ElseBlock = new EmptyNode();
-                if(check(TokenTypes::ELSE)){
-                    advance();
-                    ElseBlock=parseElseStatment();
+                Node *ElseBlock = new EmptyNode();
+
+                IfStatment *ifstmt = new IfStatment(condition, Block);
+
+                while (checkElseIf())
+                {
+                    if (check(TokenTypes::ELSE))
+                        advance();
+                    (*ifstmt).addElseIfNode(parseElseIfStatment());
                 }
-                return new IfStatment(condition, Block,ElseBlock);
-                
+                if (check(TokenTypes::ELSE))
+                {
+                    ElseBlock = parseElseStatment();
+                }
+                (*ifstmt).addElseNode(ElseBlock);
+                return ifstmt;
             }
         }
     }
-    Node* parseElseStatment(){
+    Node *parseElseIfStatment()
+    {
         advance();
-        Node* block = parseBlock();
+        if (except(TokenTypes::LEFT_PAREN))
+        {
+            Node *ConditionExpression = parseCondition();
+            Node *condition = new Condition(ConditionExpression);
+            if (except(TokenTypes::RIGHT_PAREN))
+            {
+                Node *Block = parseBlock();
+                return new ElseIfStatment(condition, Block);
+            }
+        }
+    }
+    Node *parseElseStatment()
+    {
+        advance();
+        Node *block = parseBlock();
         return new ElseStatment(block);
     }
     Node *parseStatment()
@@ -1627,7 +1698,7 @@ public:
             return parseVariableDeclaration();
         if (peek().type == TokenTypes::IF)
             return parseIfStatment();
-        if(peek().type==TokenTypes::ELSE)
+        if (peek().type == TokenTypes::ELSE)
             return parseElseStatment();
         return parseExpressionStatment();
     }
@@ -1640,7 +1711,7 @@ public:
             (*program).addNode(stmt);
             if (peek().type == TokenTypes::SEMICOLON)
                 advance();
-            else if(!isAtEnd()&&!check(TokenTypes::RIGHT_BRACE))
+            else if (!isAtEnd() && !check(TokenTypes::RIGHT_BRACE))
                 throw std::runtime_error("Expected ';' after expression Type: " + tokenTypeToString(peek().type) + " value: " + peek().value + "Line: " + to_string(peek().line) + "Col: " + to_string(peek().column));
         }
         if (peek().type == TokenTypes::END_OF_FILE)
@@ -1679,6 +1750,11 @@ int main(int argc, char *argv[])
     }
     Lexer lexer(source);
     vector<Token> tokens = lexer.tokenize();
+    for (const Token &t : tokens)
+    {
+        cout << endl
+             << tokenTypeToString(t.type);
+    }
     Parser parser(tokens);
     Node *shiit = parser.parseProgram();
     auto end = chrono::high_resolution_clock::now();
