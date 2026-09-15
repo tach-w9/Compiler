@@ -1330,6 +1330,60 @@ public:
         cout << "ContinueStatment";
     }
 };
+class Parameter: public Node{
+    public:
+    Node* VariableDecalarationNode;
+    Parameter(Node* v): VariableDecalarationNode(v){}
+    void print(int indent=0)override{
+        cout << endl;
+        for(int i =0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "Parameter";
+        (*VariableDecalarationNode).print(indent+1);
+    }
+};
+class FunctionStatment: public Node{
+    public:
+    Token Type;
+    Node* Name;
+    vector<Node*> Parameters;
+    Node* Body;
+    FunctionStatment(Token t,Node* b,Node* n):Type(t),Name(n),Body(b){}
+    void addParam(Node* p){
+        Parameters.push_back(p);
+    }
+    void print(int indent=0)override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "FunctionStatement" << endl;
+        for(int i =0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "Type" << Type.value << endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "Name";
+        (*Name).print(indent+2);
+        cout << endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "Parameters";
+        for(int i = 0;i<Parameters.size();i++) {
+            (*Parameters[i]).print(indent+2);
+        }
+        cout << endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "Body";
+        (*Body).print(indent+2);
+    }
+};
 class Program : public Node {
 public:
     vector<Node *> nodes;
@@ -1513,6 +1567,9 @@ public:
 
     bool isParen(TokenTypes type) {
         return (type == TokenTypes::LEFT_PAREN || type == TokenTypes::RIGHT_PAREN);
+    }
+    bool isBrace(Node* stmt){
+        return  !(dynamic_cast<IfStatment*>(stmt)||dynamic_cast<WhileStatment*>(stmt)||dynamic_cast<ElseStatment*>(stmt)||dynamic_cast<ElseIfStatment*>(stmt)||dynamic_cast<ForStatment*>(stmt));
     }
 
     Node *parsePrimary() {
@@ -1775,6 +1832,45 @@ public:
         (*Return).setName("return");
         return Return;
     }
+    vector<Node*> parseParameters(){
+        advance();
+        vector<Node*> params;
+        while(!check(TokenTypes::RIGHT_PAREN)){
+            
+            params.push_back(new Parameter(parseVariableDeclaration()));
+            if(check(TokenTypes::COMMA))
+                advance(); 
+        }
+        except(TokenTypes::RIGHT_PAREN);
+        return params;
+    }
+    Node* parseFunction(){
+        
+        advance();
+        if(check(TokenTypes::IDENTIFIER)){
+            Token name = peek();
+            Node* Name = new IdentifierNode(name);
+            if(check(TokenTypes::LEFT_PAREN)){
+                vector<Node*> params=parseParameters();
+                if(except(TokenTypes::RIGHT_PAREN)) {
+                    Token Type;
+                    Type.value="";
+                    if(isType(peek().type))
+                        type=peek();
+                    Node* Body = parseBlock();
+                    FunctionStatment* fun = new FunctionStatment(Type,Body,Name);
+                    for(int i = 0;i<params.size();i++) {
+                        (*fun).addParam(params[i]);
+                    }
+                    return fun;
+                }
+            }else{
+                except(TokenTypes::LEFT_PAREN);
+            }
+        }
+        return new EmptyNode();
+        
+    }
     Node *parseStatment(int loop = 0) {
         if (isType(peek().type))
             return parseVariableDeclaration();
@@ -1790,6 +1886,8 @@ public:
             return parseForStatment(loop+1);
         if (peek().type == TokenTypes::RETURN)
             return parseReturnStatment();
+        if(peek().type==TokenTypes::FUNCTION)
+            return parseFunction();
         return parseExpressionStatment();
     }
 
@@ -1799,11 +1897,10 @@ public:
         while (peek().type != TokenTypes::END_OF_FILE) {
             Node *stmt = parseStatment();
             (*program).addNode(stmt);
-            bool needsSemicolon = !(dynamic_cast<IfStatment*>(stmt)||dynamic_cast<WhileStatment*>(stmt)||dynamic_cast<ElseStatment*>(stmt)||dynamic_cast<ElseIfStatment*>(stmt)||dynamic_cast<ForStatment*>(stmt));
             if (peek().type == TokenTypes::SEMICOLON)
                 advance();
 
-            else if (needsSemicolon)
+            else if (isBrace(stmt))
                 throw std::runtime_error(
                     "Expected ';' after expression Type: " + tokenTypeToString(peek().type) + " value: " + peek().value
                     + "Line: " + to_string(peek().line) + "Col: " + to_string(peek().column));
@@ -1824,7 +1921,7 @@ string toString(string filename) {
     string content = "";
 
     while (getline(file, line)) {
-        content += line + "\n"; // إضافة السطر ومتبوعاً بـ \n
+        content += line + "\n"; 
     }
 
     return content;
@@ -1832,7 +1929,7 @@ string toString(string filename) {
 
 int main(int argc, char *argv[]) {
     auto start = chrono::high_resolution_clock::now();
-    string filename = argv[1];
+    string filename = "test.txt";
     string source = toString(filename);
     cout << "Source is: " << endl
             << source << endl;
