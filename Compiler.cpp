@@ -13,11 +13,11 @@ using namespace std;
 #define MIN_FLOAT pow(10, -38)
 #define MAX_DOUBLE pow(10, 308)
 #define MIN_DOUBLE pow(10, -308)
-#define MAX_INT 2147483648
-#define MIN_INT -2147483648
-#define MAX_FLOAT_LENGTH 7
-#define MAX_DOUBLE_LENGTH 15
-#define MAX_INT_LENGTH 10
+constexpr long long MAX_INT = 2147483648;
+constexpr long long MIN_INT = -2147483648;
+constexpr int MAX_FLOAT_LENGTH = 7;
+constexpr int MAX_DOUBLE_LENGTH = 15;
+constexpr int MAX_INT_LENGTH = 10;
 
 enum class TokenTypes {
     TYPE_INT,
@@ -133,7 +133,7 @@ struct Token {
     }
 };
 
-string tokenTypeToString(TokenTypes type) {
+constexpr string tokenTypeToString(TokenTypes type) {
     switch (type) {
         case TokenTypes::TYPE_INT:
             return "TYPE_INT";
@@ -1412,35 +1412,40 @@ public:
     }
 };
 
-class CallExpression: public Node {
+class CallExpression : public Node {
 public:
-    Node* Callee;
+    Node *Callee;
     vector<Node *> Arguments;
-    CallExpression(Node* cal): Callee(cal) {}
-    void addArg(Node* n) {
+
+    CallExpression(Node *cal) : Callee(cal) {
+    }
+
+    void addArg(Node *n) {
         Arguments.push_back(n);
     }
-    void print(int indent = 0)override {
+
+    void print(int indent = 0) override {
         cout << endl;
-        for (int i = 0;i<indent;i++) {
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "CallExpression" << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Callee";
-        (*Callee).print(indent+2);
+        (*Callee).print(indent + 2);
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Arguments";
-        for (Node* n:Arguments) {
-            (*n).print(indent+2);
+        for (Node *n: Arguments) {
+            (*n).print(indent + 2);
         }
     }
 };
+
 class Program : public Node {
 public:
     vector<Node *> nodes;
@@ -1628,11 +1633,13 @@ public:
 
     bool isBrace(Node *stmt) {
         return !(dynamic_cast<IfStatment *>(stmt) || dynamic_cast<WhileStatment *>(stmt) || dynamic_cast<ElseStatment *>
-                 (stmt) || dynamic_cast<ElseIfStatment *>(stmt) || dynamic_cast<ForStatment *>(stmt) || dynamic_cast<FunctionStatment *>(stmt));
+                 (stmt) || dynamic_cast<ElseIfStatment *>(stmt) || dynamic_cast<ForStatment *>(stmt) || dynamic_cast<
+                     FunctionStatment *>(stmt));
     }
 
     Node *parsePrimary() {
-        if (isIdentifier(peek().type)&&position+1<(int)tokens.size()&&tokens[position + 1].type==TokenTypes::LEFT_PAREN)
+        if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type ==
+            TokenTypes::LEFT_PAREN)
             return parseCalleeExpression();
         if (isValue(peek().type)) {
             Token token = peek();
@@ -1933,25 +1940,26 @@ public:
         return new EmptyNode();
     }
 
-    Node* parseCalleeExpression() {
-        Node* Callee = new IdentifierNode(peek());
+    Node *parseCalleeExpression() {
+        Node *Callee = new IdentifierNode(peek());
         advance();
         if (except(TokenTypes::LEFT_PAREN)) {
             vector<Node *> Args;
-            while(!check(TokenTypes::RIGHT_PAREN)) {
+            while (!check(TokenTypes::RIGHT_PAREN)) {
                 Args.push_back(parseExpression());
                 if (check(TokenTypes::COMMA))
                     advance();
             }
             except(TokenTypes::RIGHT_PAREN);
-            CallExpression* callee = new CallExpression(Callee);
-            for (Node* arg: Args) {
+            CallExpression *callee = new CallExpression(Callee);
+            for (Node *arg: Args) {
                 (*callee).addArg(arg);
             }
             return callee;
         }
         return new EmptyNode();
     }
+
     Node *parseStatment(int loop = 0) {
         if (isType(peek().type))
             return parseVariableDeclaration();
@@ -1990,6 +1998,80 @@ public:
             cout << endl
                     << "End Of File Reached!!";
         return program;
+    }
+};
+
+string ASTString(Node *node) {
+    if (node == nullptr) return "NullNode";
+
+    if (dynamic_cast<LiteralNode *>(node))
+        return "LiteralNode";
+    if (dynamic_cast<IdentifierNode *>(node))
+        return "IdentifierNode";
+    if (dynamic_cast<BinaryNode *>(node))
+        return "BinaryNode";
+    if (dynamic_cast<UnaryNode *>(node))
+        return "UnaryNode";
+    if (dynamic_cast<ExpressionStatment *>(node))
+        return "ExpressionStatment";
+    if (dynamic_cast<VariableDeclarationNode *>(node))
+        return "VariableDeclarationNode";
+    if (dynamic_cast<Initializer *>(node))
+        return "Initializer";
+    if (dynamic_cast<EmptyNode *>(node))
+        return "EmptyNode";
+    if (dynamic_cast<IfStatment *>(node))
+        return "IfStatment";
+    if (dynamic_cast<ElseIfStatment *>(node))
+        return "ElseIfStatment";
+    if (dynamic_cast<ElseStatment *>(node))
+        return "ElseStatment";
+    if (dynamic_cast<WhileStatment *>(node))
+        return "WhileStatment";
+    if (dynamic_cast<ReturnStatment *>(node))
+        return "ReturnStatment";
+    if (dynamic_cast<Condition *>(node))
+        return "Condition";
+    if (dynamic_cast<Block *>(node))
+        return "Block";
+    if (dynamic_cast<ForStatment *>(node))
+        return "ForStatment";
+
+    return "UnknownNode";
+}
+
+class Symbol {
+public:
+    string name;
+    TokenTypes type;
+    string Kind;
+
+    Symbol(string n, TokenTypes t, string k) : Kind(k), type(t), name(n) {
+    }
+};
+
+class SymbolTable {
+public:
+    vector<Symbol> symbols;
+
+    void addSymbol(Symbol hihi) {
+        symbols.push_back(hihi);
+    }
+
+    int contains(string name) {
+        for (const Symbol &s: symbols) {
+            if (s.name == name)
+                return 1;
+        }
+        return 0;
+    }
+
+    Symbol lookup(string name) {
+        for (const Symbol &s: symbols) {
+            if (s.name == name)
+                return s;
+        }
+        return Symbol("", TokenTypes::UNKNOWN, "");
     }
 };
 
