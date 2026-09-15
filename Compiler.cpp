@@ -401,7 +401,7 @@ std::unordered_map<std::string, TokenTypes> keywords =
     {"null", TokenTypes::NULL_VAL},
     {"include", TokenTypes::INLCUDE},
     {"pointer", TokenTypes::POINTER},
-    {"continue",TokenTypes::CONTINUE}
+    {"continue", TokenTypes::CONTINUE}
 };
 
 std::unordered_map<char, TokenTypes> operators =
@@ -961,21 +961,26 @@ public:
 
 class Node {
 private:
-    string name="";
+    string name = "";
     int loop = 0;
+
 public:
     virtual ~Node() = default;
 
     virtual void print(int indent) = 0;
+
     virtual string getName() {
         return (*this).name;
     }
+
     virtual void setName(const string n) {
-        (*this).name=n;
+        (*this).name = n;
     }
+
     virtual void setLoop(int i) {
-        (*this).loop=i;
+        (*this).loop = i;
     }
+
     virtual int getLoop() {
         return (*this).loop;
     }
@@ -1054,6 +1059,7 @@ public:
 class ExpressionStatment : public Node {
 private:
     string name = "ExpressionStatment";
+
 public:
     Node *Expression;
 
@@ -1073,6 +1079,7 @@ public:
 class VariableDeclarationNode : public Node {
 private:
     string name = "VariableDeclarationNode";
+
 public:
     Token type;
     Node *identifier;
@@ -1126,6 +1133,7 @@ public:
 class IfStatment : public Node {
 private:
     string name = "IfStatment";
+
 public:
     Node *Condition;
     Node *ThenBlock;
@@ -1208,6 +1216,7 @@ class WhileStatment : public Node {
 public:
     Node *Condition;
     Node *Block;
+
     WhileStatment(Node *c, Node *b) : Condition(c), Block(b) {
     }
 
@@ -1228,19 +1237,22 @@ public:
 };
 
 class ReturnStatment : public Node {
-    public:
-    Node* Expression;
-    ReturnStatment(Node* e):Expression(e){}
-    void print(int indent=0)override {
+public:
+    Node *Expression;
+
+    ReturnStatment(Node *e) : Expression(e) {
+    }
+
+    void print(int indent = 0) override {
         cout << endl;
-        for (int i = 0;i<indent;i++) {
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "ReturnStatment";
-        (*Expression).print(indent+1);
+        (*Expression).print(indent + 1);
     }
-
 };
+
 class Condition : public Node {
 public:
     Node *ConditionExpression;
@@ -1277,111 +1289,156 @@ public:
         (*this).nodes.push_back(node);
     }
 };
-class ForStatment: public Node {
+
+class ForStatment : public Node {
 public:
-    Node* Initialisation;
-    Node* Condition;
-    Node* Increment;
-    Node* Body;
-    ForStatment(Node* i,Node* c,Node* in,Node* b):Initialisation(i),Condition(c),Body(b),Increment(in) {}
-    void print(int indent = 0)override {
+    Node *Initialisation;
+    Node *Condition;
+    Node *Increment;
+    Node *Body;
+
+    ForStatment(Node *i, Node *c, Node *in, Node *b) : Initialisation(i), Condition(c), Body(b), Increment(in) {
+    }
+
+    void print(int indent = 0) override {
         cout << endl;
-        for (int i = 0;i<indent;i++) {
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "ForStatment" << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Initialisation";
         (*Initialisation).print(indent + 2);
-        (*Condition).print(indent+1);
+        (*Condition).print(indent + 1);
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Increment";
-        (*Increment).print(indent+2);
+        (*Increment).print(indent + 2);
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Body";
-        (*Body).print(indent+2);
+        (*Body).print(indent + 2);
     }
 };
-class BreakStatment: public Node {
+
+class BreakStatment : public Node {
 public:
-    void print(int indent = 0)override{
+    void print(int indent = 0) override {
         cout << endl;
-        for (int i = 0;i<indent;i++) {
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "BreakStatment";
     }
 };
-class ContinueStatment: public Node {
+
+class ContinueStatment : public Node {
 public:
-    void print(int indent = 0)override{
+    void print(int indent = 0) override {
         cout << endl;
-        for (int i = 0;i<indent;i++) {
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "ContinueStatment";
     }
 };
-class Parameter: public Node{
-    public:
-    Node* VariableDecalarationNode;
-    Parameter(Node* v): VariableDecalarationNode(v){}
-    void print(int indent=0)override{
+
+class Parameter : public Node {
+public:
+    Node *VariableDecalarationNode;
+
+    Parameter(Node *v) : VariableDecalarationNode(v) {
+    }
+
+    void print(int indent = 0) override {
         cout << endl;
-        for(int i =0;i<indent;i++){
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "Parameter";
-        (*VariableDecalarationNode).print(indent+1);
+        (*VariableDecalarationNode).print(indent + 1);
     }
 };
-class FunctionStatment: public Node{
-    public:
+
+class FunctionStatment : public Node {
+public:
     Token Type;
-    Node* Name;
-    vector<Node*> Parameters;
-    Node* Body;
-    FunctionStatment(Token t,Node* b,Node* n):Type(t),Name(n),Body(b){}
-    void addParam(Node* p){
+    Node *Name;
+    vector<Node *> Parameters;
+    Node *Body;
+
+    FunctionStatment(Token t, Node *b, Node *n) : Type(t), Name(n), Body(b) {
+    }
+
+    void addParam(Node *p) {
         Parameters.push_back(p);
     }
-    void print(int indent=0)override{
+
+    void print(int indent = 0) override {
         cout << endl;
-        for(int i = 0;i<indent;i++){
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "FunctionStatement" << endl;
-        for(int i =0;i<indent+1;i++){
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
-        cout << "Type" << Type.value << endl;
-        for(int i = 0;i<indent+1;i++){
+        cout << "Type: " << Type.value << endl;
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Name";
-        (*Name).print(indent+2);
+        (*Name).print(indent + 2);
         cout << endl;
-        for(int i = 0;i<indent+1;i++){
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Parameters";
-        for(int i = 0;i<Parameters.size();i++) {
-            (*Parameters[i]).print(indent+2);
+        for (int i = 0; i < Parameters.size(); i++) {
+            (*Parameters[i]).print(indent + 2);
         }
         cout << endl;
-        for(int i = 0;i<indent+1;i++){
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Body";
-        (*Body).print(indent+2);
+        (*Body).print(indent + 2);
+    }
+};
+
+class CallExpression: public Node {
+public:
+    Node* Callee;
+    vector<Node *> Arguments;
+    CallExpression(Node* cal): Callee(cal) {}
+    void addArg(Node* n) {
+        Arguments.push_back(n);
+    }
+    void print(int indent = 0)override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "CallExpression" << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Callee";
+        (*Callee).print(indent+2);
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Arguments";
+        for (Node* n:Arguments) {
+            (*n).print(indent+2);
+        }
     }
 };
 class Program : public Node {
@@ -1568,11 +1625,15 @@ public:
     bool isParen(TokenTypes type) {
         return (type == TokenTypes::LEFT_PAREN || type == TokenTypes::RIGHT_PAREN);
     }
-    bool isBrace(Node* stmt){
-        return  !(dynamic_cast<IfStatment*>(stmt)||dynamic_cast<WhileStatment*>(stmt)||dynamic_cast<ElseStatment*>(stmt)||dynamic_cast<ElseIfStatment*>(stmt)||dynamic_cast<ForStatment*>(stmt));
+
+    bool isBrace(Node *stmt) {
+        return !(dynamic_cast<IfStatment *>(stmt) || dynamic_cast<WhileStatment *>(stmt) || dynamic_cast<ElseStatment *>
+                 (stmt) || dynamic_cast<ElseIfStatment *>(stmt) || dynamic_cast<ForStatment *>(stmt) || dynamic_cast<FunctionStatment *>(stmt));
     }
 
     Node *parsePrimary() {
+        if (isIdentifier(peek().type)&&position+1<(int)tokens.size()&&tokens[position + 1].type==TokenTypes::LEFT_PAREN)
+            return parseCalleeExpression();
         if (isValue(peek().type)) {
             Token token = peek();
             advance();
@@ -1659,11 +1720,10 @@ public:
     Node *parseAssignment() {
         Node *left = parseLogicalOr();
         if (peek().type == TokenTypes::EQUAL ||
-        peek().type == TokenTypes::PLUS_EQUAL ||
-        peek().type == TokenTypes::MINUS_EQUAL ||
-        peek().type == TokenTypes::MULTI_EQUAL ||
-        peek().type == TokenTypes::DIVIDE_EQUAL)
-        {
+            peek().type == TokenTypes::PLUS_EQUAL ||
+            peek().type == TokenTypes::MINUS_EQUAL ||
+            peek().type == TokenTypes::MULTI_EQUAL ||
+            peek().type == TokenTypes::DIVIDE_EQUAL) {
             Token op = peek();
             advance();
             Node *right = parseAssignment();
@@ -1706,7 +1766,7 @@ public:
         return parseExpression();
     }
 
-    Node *parseBlock(int loop=0) {
+    Node *parseBlock(int loop = 0) {
         Block *block = new Block();
         if (except(TokenTypes::LEFT_BRACE)) {
             while (peek().type != TokenTypes::RIGHT_BRACE) {
@@ -1781,11 +1841,11 @@ public:
         }
         return new EmptyNode();
     }
-    Node* parseForStatment(int loop = 0) {
+
+    Node *parseForStatment(int loop = 0) {
         advance();
         if (except(TokenTypes::LEFT_PAREN)) {
-
-            Node* Initialisation = new EmptyNode();
+            Node *Initialisation = new EmptyNode();
             if (!check(TokenTypes::SEMICOLON)) {
                 if (isType(peek().type))
                     Initialisation = parseVariableDeclaration();
@@ -1794,82 +1854,103 @@ public:
             }
 
             except(TokenTypes::SEMICOLON);
-            Node* condition = new EmptyNode();
+            Node *condition = new EmptyNode();
             if (!check(TokenTypes::SEMICOLON)) {
-                Node* ConditionExpression = parseCondition();
+                Node *ConditionExpression = parseCondition();
                 condition = new Condition(ConditionExpression);
             }
             except(TokenTypes::SEMICOLON);
-            Node* Incrementation = new EmptyNode();
+            Node *Incrementation = new EmptyNode();
             if (!check(TokenTypes::RIGHT_PAREN)) {
                 Incrementation = parseExpression();
             }
             if (except(TokenTypes::RIGHT_PAREN)) {
-                Node* Body = parseBlock(loop);
+                Node *Body = parseBlock(loop);
                 return new ForStatment(Initialisation, condition, Incrementation, Body);
             }
         }
         return new EmptyNode();
     }
-    Node *parseBreakStatment()
-    {
+
+    Node *parseBreakStatment() {
         advance();
-        Node* Break = new BreakStatment();
+        Node *Break = new BreakStatment();
         (*Break).setName("break");
         return Break;
     }
-    Node *parseContinueStatment()
-    {
+
+    Node *parseContinueStatment() {
         advance();
-        Node* Continue = new ContinueStatment();
+        Node *Continue = new ContinueStatment();
         (*Continue).setName("continue");
         return Continue;
     }
-    Node* parseReturnStatment() {
+
+    Node *parseReturnStatment() {
         advance();
-        Node* Expression = parseExpression();
-        Node* Return = new ReturnStatment(Expression);
+        Node *Expression = parseExpression();
+        Node *Return = new ReturnStatment(Expression);
         (*Return).setName("return");
         return Return;
     }
-    vector<Node*> parseParameters(){
+
+    vector<Node *> parseParameters() {
         advance();
-        vector<Node*> params;
-        while(!check(TokenTypes::RIGHT_PAREN)){
-            
+        vector<Node *> params;
+        while (!check(TokenTypes::RIGHT_PAREN)) {
             params.push_back(new Parameter(parseVariableDeclaration()));
-            if(check(TokenTypes::COMMA))
-                advance(); 
+            if (check(TokenTypes::COMMA))
+                advance();
         }
         except(TokenTypes::RIGHT_PAREN);
         return params;
     }
-    Node* parseFunction(){
-        
+
+    Node *parseFunction() {
         advance();
-        if(check(TokenTypes::IDENTIFIER)){
-            Token name = peek();
-            Node* Name = new IdentifierNode(name);
-            if(check(TokenTypes::LEFT_PAREN)){
-                vector<Node*> params=parseParameters();
-                if(except(TokenTypes::RIGHT_PAREN)) {
-                    Token Type;
-                    Type.value="";
-                    if(isType(peek().type))
-                        type=peek();
-                    Node* Body = parseBlock();
-                    FunctionStatment* fun = new FunctionStatment(Type,Body,Name);
-                    for(int i = 0;i<params.size();i++) {
-                        (*fun).addParam(params[i]);
-                    }
-                    return fun;
+        Token name = peek();
+        if (except(TokenTypes::IDENTIFIER)) {
+            Node *Name = new IdentifierNode(name);
+
+            if (check(TokenTypes::LEFT_PAREN)) {
+                vector<Node *> params = parseParameters();
+                Token Type = Token(TokenTypes::UNKNOWN, 0, 0, "");
+                Type.value = "";
+                if (isType(peek().type)) {
+                    Type = peek();
+                    advance();
                 }
-            }else{
+                Node *Body = parseBlock();
+                FunctionStatment *fun = new FunctionStatment(Type, Body, Name);
+                for (int i = 0; i < params.size(); i++) {
+                    (*fun).addParam(params[i]);
+                }
+                return fun;
+            } else {
                 except(TokenTypes::LEFT_PAREN);
             }
         }
         return new EmptyNode();
-        
+    }
+
+    Node* parseCalleeExpression() {
+        Node* Callee = new IdentifierNode(peek());
+        advance();
+        if (except(TokenTypes::LEFT_PAREN)) {
+            vector<Node *> Args;
+            while(!check(TokenTypes::RIGHT_PAREN)) {
+                Args.push_back(parseExpression());
+                if (check(TokenTypes::COMMA))
+                    advance();
+            }
+            except(TokenTypes::RIGHT_PAREN);
+            CallExpression* callee = new CallExpression(Callee);
+            for (Node* arg: Args) {
+                (*callee).addArg(arg);
+            }
+            return callee;
+        }
+        return new EmptyNode();
     }
     Node *parseStatment(int loop = 0) {
         if (isType(peek().type))
@@ -1877,16 +1958,16 @@ public:
         if (peek().type == TokenTypes::IF)
             return parseIfStatment(loop);
         if (peek().type == TokenTypes::WHILE)
-            return parseWhileStatment(loop+1);
+            return parseWhileStatment(loop + 1);
         if (peek().type == TokenTypes::BREAK)
             return parseBreakStatment();
         if (peek().type == TokenTypes::CONTINUE)
             return parseContinueStatment();
         if (peek().type == TokenTypes::FOR)
-            return parseForStatment(loop+1);
+            return parseForStatment(loop + 1);
         if (peek().type == TokenTypes::RETURN)
             return parseReturnStatment();
-        if(peek().type==TokenTypes::FUNCTION)
+        if (peek().type == TokenTypes::FUNCTION)
             return parseFunction();
         return parseExpressionStatment();
     }
@@ -1921,7 +2002,7 @@ string toString(string filename) {
     string content = "";
 
     while (getline(file, line)) {
-        content += line + "\n"; 
+        content += line + "\n";
     }
 
     return content;
