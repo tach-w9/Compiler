@@ -952,9 +952,6 @@ public:
             tokens.push_back(token);
         }
 
-        tokens.push_back(
-            Token(TokenTypes::END_OF_FILE, column, line, ""));
-
         return tokens;
     }
 };
@@ -1505,7 +1502,7 @@ class ArrayInit: public Node{
         for(int i = 0;i<indent;i++){
             cout << "  ";
         }
-        cout << "ArrayAssignment";
+        cout << "ArrayInitializerNode";
         for(Node* n:args){
             (*n).print(indent+1);
         }
@@ -1549,6 +1546,7 @@ public:
         (*Index).print(indent+2);
     }
 };
+
 class Program : public Node {
 public:
     vector<Node *> nodes;
