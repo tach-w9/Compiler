@@ -133,7 +133,7 @@ struct Token {
     }
 };
 
-constexpr string tokenTypeToString(TokenTypes type) {
+ string tokenTypeToString(TokenTypes type) {
     switch (type) {
         case TokenTypes::TYPE_INT:
             return "TYPE_INT";
@@ -1446,6 +1446,65 @@ public:
     }
 };
 
+class ArrayDeclarationNode: public Node{
+    public:
+    Token Type;
+    Node* Name;
+    Node* Size;
+    Node* Initializer;
+    ArrayDeclarationNode(Token t,Node* n,Node* s,Node* i):Type(t),Name(n),Size(s),Initializer(i){}
+    
+    void print(int indent = 0) override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "ArrayDeclarationNode" << endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "Type: " << Type.value;
+        (*Name).print(indent+1);
+        cout << endl;
+        for(int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Size";
+        (*Size).print(indent+2);
+        (*Initializer).print(indent+1);
+        
+    }
+};
+class ArrayInit: public Node{
+    public:
+    vector<Node*> args;
+    void addArg(Node* arg){
+        args.push_back(arg);
+    }
+    void print(int indent = 0) override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "ArrayAssignment";
+        for(Node* n:args){
+            (*n).print(indent+1);
+        }
+    }
+};
+class ArrayArg: public Node{
+    public:
+    Node* Expression;
+    ArrayArg(Node* exper):Expression(exper){}
+    void print(int indent=0) override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "ArrayArg";
+        (*Expression).print(indent+1);
+    }
+};
 class Program : public Node {
 public:
     vector<Node *> nodes;
@@ -1746,7 +1805,17 @@ public:
     Node *parseExpressionStatment() {
         return new ExpressionStatment(parseExpression());
     }
-
+    
+    Node* parseArrayAssignment(){
+        ArrayInit* arr = new ArrayInit();
+        while(!check(TokenTypes::RIGHT_BRACE)){
+            (*arr).addArg(new ArrayArg(parseExpression()));
+            if(check(TokenTypes::COMMA))
+                advance();
+        }
+        except(TokenTypes::RIGHT_BRACE);
+        return arr;
+    }
     Node *parseVariableDeclaration() {
         Token type = peek();
         advance();
@@ -1759,7 +1828,21 @@ public:
         Token ident = peek();
         Node *identifier = new IdentifierNode(ident);
         advance();
-
+        if(peek().type==TokenTypes::LEFT_BRACKET){
+            advance();
+            Node* Size = parseExpression();
+            except(TokenTypes::RIGHT_BRACKET);
+            
+            Node *expression = new EmptyNode();
+            if(check(TokenTypes::EQUAL)){
+                advance();
+                if(except(TokenTypes::LEFT_BRACE)){
+                    expression = parseArrayAssignment();
+                }
+            }
+            Node* initializer= new Initializer(expression);
+            return new ArrayDeclarationNode(type,identifier,Size,initializer);
+        }
         Node *expression = new EmptyNode();
         if (peek().type == TokenTypes::EQUAL) {
             advance();
