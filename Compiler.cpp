@@ -1450,10 +1450,16 @@ class ArrayDeclarationNode: public Node{
     public:
     Token Type;
     Node* Name;
-    Node* Size;
+    vector<Node* > Sizes;
     Node* Initializer;
-    ArrayDeclarationNode(Token t,Node* n,Node* s,Node* i):Type(t),Name(n),Size(s),Initializer(i){}
-    
+    ArrayDeclarationNode(Token t,Node* n,Node* i=new EmptyNode()):Type(t),Name(n),Initializer(i){}
+
+    void addSize(Node* s) {
+        Sizes.push_back(s);
+    }
+    void initialize(Node* init) {
+        (*this).Initializer = init;
+    }
     void print(int indent = 0) override{
         cout << endl;
         for(int i = 0;i<indent;i++){
@@ -1465,23 +1471,36 @@ class ArrayDeclarationNode: public Node{
         }
         cout << "Type: " << Type.value;
         (*Name).print(indent+1);
+        for (int i = 0;i<Sizes.size();i++) {
+            cout << endl;
+            for(int i = 0;i<indent+1;i++) {
+                cout << "  ";
+            }
+            cout << "Size" << i+1;
+            (*Sizes[i]).print(indent+2);
+        }
+
+        (*Initializer).print(indent+1);
         cout << endl;
-        for(int i = 0;i<indent+1;i++) {
+        for (int i = 0;i<indent+1;i++) {
             cout << "  ";
         }
-        cout << "Size";
-        (*Size).print(indent+2);
-        (*Initializer).print(indent+1);
-        
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Dimensions: " << Sizes.size();
     }
 };
 class ArrayInit: public Node{
     public:
     vector<Node*> args;
+
     void addArg(Node* arg){
         args.push_back(arg);
     }
-    void print(int indent = 0) override{
+
+    void print(int indent = 0) override {
         cout << endl;
         for(int i = 0;i<indent;i++){
             cout << "  ";
@@ -1503,6 +1522,31 @@ class ArrayArg: public Node{
         }
         cout << "ArrayArg";
         (*Expression).print(indent+1);
+    }
+};
+class ArrayAccessNode: public Node {
+public:
+    Node* Name;
+    Node* Index;
+
+    ArrayAccessNode(Node* n,Node* i):Name(n),Index(i){}
+    void print(int indent = 0) override {
+        cout << endl;
+        for (int i =0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "ArrayAccessNode" << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Array";
+        (*Name).print(indent+2);
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Index";
+        (*Index).print(indent+2);
     }
 };
 class Program : public Node {
@@ -1700,6 +1744,9 @@ public:
         if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type ==
             TokenTypes::LEFT_PAREN)
             return parseCalleeExpression();
+        if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type ==
+            TokenTypes::LEFT_BRACKET)
+            return parseArrayAccessNode();
         if (isValue(peek().type)) {
             Token token = peek();
             advance();
@@ -1805,11 +1852,15 @@ public:
     Node *parseExpressionStatment() {
         return new ExpressionStatment(parseExpression());
     }
-    
+
     Node* parseArrayAssignment(){
         ArrayInit* arr = new ArrayInit();
         while(!check(TokenTypes::RIGHT_BRACE)){
-            (*arr).addArg(new ArrayArg(parseExpression()));
+            if (check(TokenTypes::LEFT_BRACE)) {
+                advance();
+                (*arr).addArg(parseArrayAssignment());
+            }else
+                (*arr).addArg(new ArrayArg(parseExpression()));
             if(check(TokenTypes::COMMA))
                 advance();
         }
@@ -1828,21 +1879,26 @@ public:
         Token ident = peek();
         Node *identifier = new IdentifierNode(ident);
         advance();
-        if(peek().type==TokenTypes::LEFT_BRACKET){
-            advance();
-            Node* Size = parseExpression();
-            except(TokenTypes::RIGHT_BRACKET);
-            
+        if (check(TokenTypes::LEFT_BRACKET)) {
+            ArrayDeclarationNode* array_declaration_node = new ArrayDeclarationNode(type,identifier);
             Node *expression = new EmptyNode();
+            while(peek().type==TokenTypes::LEFT_BRACKET) {
+                advance();
+                Node* Size = parseExpression();
+                except(TokenTypes::RIGHT_BRACKET);
+                (*array_declaration_node).addSize(Size);
+            }
             if(check(TokenTypes::EQUAL)){
                 advance();
                 if(except(TokenTypes::LEFT_BRACE)){
                     expression = parseArrayAssignment();
                 }
             }
-            Node* initializer= new Initializer(expression);
-            return new ArrayDeclarationNode(type,identifier,Size,initializer);
+            (*array_declaration_node).initialize(new Initializer(expression));
+            return array_declaration_node;
         }
+
+
         Node *expression = new EmptyNode();
         if (peek().type == TokenTypes::EQUAL) {
             advance();
@@ -2043,6 +2099,28 @@ public:
         return new EmptyNode();
     }
 
+    Node* parseArrayAccessNode(){
+        Node* name = new EmptyNode();
+        if (check(TokenTypes::IDENTIFIER)) {
+            name = new IdentifierNode(peek());
+            advance();
+        }
+        if (except(TokenTypes::LEFT_BRACKET)) {
+            Node* index = parseExpression();
+            Node* shiiit = new ArrayAccessNode(name,index);
+            except(TokenTypes::RIGHT_BRACKET);
+            while (check(TokenTypes::LEFT_BRACKET)) {
+                advance();
+                Node* nextIndex = parseExpression();
+
+                except(TokenTypes::RIGHT_BRACKET);
+                shiiit = new ArrayAccessNode(shiiit,nextIndex);
+            }
+
+            return shiiit;
+        }
+        return new EmptyNode();
+    }
     Node *parseStatment(int loop = 0) {
         if (isType(peek().type))
             return parseVariableDeclaration();
