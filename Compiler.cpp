@@ -105,6 +105,8 @@ enum class TokenTypes {
 
     INLCUDE,
 
+    OVERRIDE,
+    FRIEND,
     PLUS_EQUAL,
     MINUS_EQUAL,
     DIVIDE_EQUAL,
@@ -113,6 +115,7 @@ enum class TokenTypes {
     BREAK,
     CONTINUE,
     INVALID,
+    DEFAULT,
     END_OF_FILE
 };
 
@@ -401,7 +404,12 @@ std::unordered_map<std::string, TokenTypes> keywords =
     {"null", TokenTypes::NULL_VAL},
     {"include", TokenTypes::INLCUDE},
     {"pointer", TokenTypes::POINTER},
-    {"continue", TokenTypes::CONTINUE}
+    {"continue", TokenTypes::CONTINUE},
+    {"friend", TokenTypes::FRIEND},
+    {"static", TokenTypes::STATIC},
+    {"override",TokenTypes::OVERRIDE},
+    {"virtual", TokenTypes::VIRTUAL},
+    {"default",TokenTypes::DEFAULT}
 };
 
 std::unordered_map<char, TokenTypes> operators =
@@ -981,8 +989,11 @@ public:
     virtual int getLoop() {
         return (*this).loop;
     }
+    friend string getName(Node* n);
 };
-
+string getName(Node* n) {
+    return (*n).name;
+}
 class LiteralNode : public Node {
 public:
     Token val;
@@ -1083,6 +1094,7 @@ public:
     Node *Initializer;
 
     VariableDeclarationNode(Node *Init, Token type, Node *ident) : Initializer(Init), identifier(ident), type(type) {
+        setName("VariableDeclarationNode");
     }
 
     void print(int indent = 0) override {
@@ -1364,6 +1376,8 @@ public:
 };
 
 class FunctionStatment : public Node {
+private:
+    string name = "Function";
 public:
     Token Type;
     Node *Name;
@@ -1547,6 +1561,262 @@ public:
     }
 };
 
+class FieldDeclaration: public Node {
+public:
+    Node* VariableDeclaration;
+    FieldDeclaration(Node* v):VariableDeclaration(v){}
+    void print(int indent = 0) override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "FieldDeclaration";
+        (*VariableDeclaration).print(indent+1);
+    }
+};
+class MemberInitializer: public Node {
+private:
+    string name = "Method";
+
+public:
+    Node* Member;
+    Node* Value;
+    MemberInitializer(Node* mem,Node* val):Member(mem),Value(val) {
+
+    }
+    void print(int indent = 0) override{
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "MemberInitializer" << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Member";
+        (*Member).print(indent+2);
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Value";
+        (*Value).print(indent+2);
+    }
+};
+class ConstructorNode: public Node {
+private:
+    string name = "ConstructorNode";
+public:
+    Node* ObjectName;
+    vector<Node*> Params;
+    vector<Node*> Initilizators;
+    Node* Body;
+    ConstructorNode(Node* obj_n):ObjectName(obj_n) {
+        setName("Constructor");
+    }
+    void addParam(Node* shii) {
+        Params.push_back(shii);
+    }
+    void addInit(Node* init) {
+        Initilizators.push_back(init);
+    }
+    void body(Node* body) {
+        (*this).Body=body;
+    }
+    void print(int indent = 0) override {
+        cout << endl;
+        for (int i =0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "ConstructorNode";
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "ObjectName";
+        (*ObjectName).print(indent+2);
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Parameters";
+        for (Node* n:Params) {
+            (*n).print(indent+2);
+        }
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Initializators";
+        for (Node* init:Initilizators) {
+            (*init).print(indent+2);
+        }
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Body";
+        (*Body).print(indent+2);
+    }
+};
+class DestructorNode: public Node {
+private:
+    string name = "DestructorNode";
+public:
+    Node* Callee;
+    Node* Body;
+    int isAbstract;
+    DestructorNode(Node* cal,int isAbs=0):Callee(cal),isAbstract(isAbs) {
+        setName("Destructor");
+    }
+    void body(Node* body) {
+        (*this).Body=body;
+    }
+    void print(int indent = 0) override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "DestructorNode";
+        (*Callee).print(indent+1);
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "isAbstract: " << ((isAbstract)?"True":"False") << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Body";
+        (*Body).print(indent+2);
+    }
+};
+class MethodStatment : public Node {
+private:
+    string name = "MethodStatmen";
+public:
+    Token Type;
+    Node *Name;
+    vector<Node *> Parameters;
+    Node *Body;
+    int isFriend;
+    int isOverride;
+    int isStatic;
+    int isVirtual;
+
+    MethodStatment(Token t, Node *b, Node *n,int f = 0,int o = 0,int s = 0,int v = 0) : Type(t), Name(n), Body(b),isFriend(f),isOverride(o),isStatic(s),isVirtual(v) {
+        setName("MethodStatment");
+    }
+
+    void addParam(Node *p) {
+        Parameters.push_back(p);
+    }
+
+    void print(int indent = 0) override {
+        cout << endl;
+        for (int i = 0; i < indent; i++) {
+            cout << "  ";
+        }
+        cout << "Method" << endl;
+        for (int i = 0; i < indent + 1; i++) {
+            cout << "  ";
+        }
+        cout << "Type: " << Type.value << endl;
+        for (int i = 0; i < indent + 1; i++) {
+            cout << "  ";
+        }
+        cout << "Name";
+        (*Name).print(indent + 2);
+        cout << endl;
+        for (int i = 0; i < indent + 1; i++) {
+            cout << "  ";
+        }
+        cout << "Parameters";
+        for (int i = 0; i < Parameters.size(); i++) {
+            (*Parameters[i]).print(indent + 2);
+        }
+        cout << endl;
+        for (int i = 0; i < indent + 1; i++) {
+            cout << "  ";
+        }
+        cout << "Body";
+        (*Body).print(indent + 2);
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "isVirtual: " << ((isVirtual)?"True":"False") << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "isOverride: " << ((isOverride)?"True":"False") << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "isStatic: " << ((isStatic)?"True":"False") << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "isFriend: " << ((isFriend)?"True":"False");
+    }
+};
+class StructDeclaration : public Node {
+public:
+    Node* Name;
+    Node* Constructor = new EmptyNode();
+    Node* Destructor = new EmptyNode();
+    vector<Node*> Fields;
+    vector<Node*> Methods;
+    Node* Body = new EmptyNode();
+    StructDeclaration(Node* n):Name(n){}
+    void addField(Node* field) {
+        Fields.push_back(field);
+    }
+    void addMethod(Node* method) {
+        Methods.push_back(method);
+    }
+    void body(Node* body) {
+        (*this).Body=body;
+    }
+    void constructor(Node* conster) {
+        (*this).Constructor=conster;
+    }
+    void destructor(Node* dester) {
+        (*this).Destructor=dester;
+    }
+    void print(int indent = 0) override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "StructDeclaration" << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Name";
+        (*Name).print(indent+2);
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Fields";
+        for (Node* n:Fields) {
+            (*n).print(indent+2);
+        }
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Methods";
+        for (Node* Method:Methods) {
+            (*Method).print(indent+2);
+        }
+        (*Constructor).print(indent+1);
+        (*Destructor).print(indent+1);
+
+    }
+};
+
 class Program : public Node {
 public:
     vector<Node *> nodes;
@@ -1611,7 +1881,8 @@ public:
             advance();
             return 1;
         }
-        throw std::runtime_error("Type is not the same!");
+        throw std::runtime_error("Type is not the same! Type: " + tokenTypeToString(peek().type) + " value: " + peek().value
+                    + "Line: " + to_string(peek().line) + "Col: " + to_string(peek().column));
         return 0;
     }
 
@@ -1739,9 +2010,6 @@ public:
     }
 
     Node *parsePrimary() {
-        if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type ==
-            TokenTypes::LEFT_PAREN)
-            return parseCalleeExpression();
         if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type ==
             TokenTypes::LEFT_BRACKET)
             return parseArrayAccessNode();
@@ -1916,8 +2184,6 @@ public:
             while (peek().type != TokenTypes::RIGHT_BRACE) {
                 Node *stmt = parseStatment(loop);
                 (*stmt).setLoop(loop);
-
-
                 (*block).addNode(stmt);
                 if (peek().type == TokenTypes::SEMICOLON)
                     advance();
@@ -2050,8 +2316,33 @@ public:
         return params;
     }
 
-    Node *parseFunction() {
-        advance();
+    Node *parseFunction(int object = 0) {
+        int isFriend = 0;
+        int isOverride = 0;
+        int isVirtual = 0;
+        int isStatic = 0;
+        while (check(TokenTypes::FRIEND)||check(TokenTypes::STATIC)||check(TokenTypes::VIRTUAL)||check(TokenTypes::OVERRIDE)) {
+            if (check(TokenTypes::FRIEND)) {
+                isFriend=1;
+                advance();
+            }
+            else if (check(TokenTypes::STATIC)) {
+                isStatic=1;
+                advance();
+            }
+            else if (check(TokenTypes::VIRTUAL)) {
+                isVirtual=1;
+                advance();
+            }
+            else if (check(TokenTypes::OVERRIDE)) {
+                isOverride=1;
+                advance();
+            }
+        }
+        if (isFriend||isOverride||isVirtual||isStatic)
+            except(TokenTypes::FUNCTION);
+        else
+            advance();
         Token name = peek();
         if (except(TokenTypes::IDENTIFIER)) {
             Node *Name = new IdentifierNode(name);
@@ -2065,6 +2356,13 @@ public:
                     advance();
                 }
                 Node *Body = parseBlock();
+                if (object) {
+                    MethodStatment* method = new MethodStatment(Type,Body,Name,isFriend,isOverride,isStatic,isVirtual);
+                    for (int i = 0;i<params.size();i++) {
+                        (*method).addParam(params[i]);
+                    }
+                    return method;
+                }
                 FunctionStatment *fun = new FunctionStatment(Type, Body, Name);
                 for (int i = 0; i < params.size(); i++) {
                     (*fun).addParam(params[i]);
@@ -2082,12 +2380,31 @@ public:
         advance();
         if (except(TokenTypes::LEFT_PAREN)) {
             vector<Node *> Args;
+
             while (!check(TokenTypes::RIGHT_PAREN)) {
-                Args.push_back(parseExpression());
+                if (isType(peek().type))
+                    Args.push_back(parseVariableDeclaration());
+                else
+                    Args.push_back(parseExpression());
                 if (check(TokenTypes::COMMA))
                     advance();
             }
             except(TokenTypes::RIGHT_PAREN);
+            if (check(TokenTypes::DOUBLE_POINTS)) {
+                advance();
+                ConstructorNode* Constructor = new ConstructorNode(Callee);
+                for (Node* Arg:Args) {
+                    (*Constructor).addParam(Arg);
+                }
+                while (!check(TokenTypes::LEFT_BRACE)) {
+                    (*Constructor).addInit(parseMemberInitializer());
+                    if (check(TokenTypes::COMMA))
+                        advance();
+                }
+                Node* Body = parseBlock();
+                (*Constructor).body(Body);
+                return Constructor;
+            }
             CallExpression *callee = new CallExpression(Callee);
             for (Node *arg: Args) {
                 (*callee).addArg(arg);
@@ -2095,6 +2412,25 @@ public:
             return callee;
         }
         return new EmptyNode();
+    }
+    Node* parseDestructor() {
+        advance();
+        Node* Callee = new IdentifierNode(peek());
+        except(TokenTypes::IDENTIFIER);
+        except(TokenTypes::LEFT_PAREN);
+        except(TokenTypes::RIGHT_PAREN);
+        int isAbs = 0;
+        Node* Block = new EmptyNode();
+        if (check(TokenTypes::EQUAL)) {
+            advance();
+            except(TokenTypes::DEFAULT);
+            isAbs=1;
+        }else
+            Block = parseBlock();
+        DestructorNode* Destructor = new DestructorNode(Callee,isAbs);
+        (*Destructor).body(Block);
+        return Destructor;
+
     }
 
     Node* parseArrayAccessNode(){
@@ -2119,7 +2455,43 @@ public:
         }
         return new EmptyNode();
     }
-    Node *parseStatment(int loop = 0) {
+    Node* parseMemberInitializer() {
+        Node* name = new IdentifierNode(peek());
+        except(TokenTypes::IDENTIFIER);
+        except(TokenTypes::LEFT_PAREN);
+        Node* Value = parseExpression();
+        except(TokenTypes::RIGHT_PAREN);
+        return new MemberInitializer(name,Value);
+    }
+    void parseObject(int isClass = 0,auto Struct = new EmptyNode()) {
+        Block *block = new Block();
+        if (except(TokenTypes::LEFT_BRACE)) {
+            while (peek().type != TokenTypes::RIGHT_BRACE) {
+                Node *stmt = parseStatment(0,1);
+                if (getName(stmt)=="VariableDeclarationNode") {
+                    stmt = new FieldDeclaration(stmt);
+                    (*Struct).addField(stmt);
+                }else if (getName(stmt)=="Constructor")
+                    (*Struct).constructor(stmt);
+                else if (getName(stmt)=="Destructor")
+                    (*Struct).destructor(stmt);
+                else if (getName(stmt)=="MethodStatment")
+                    (*Struct).addMethod(stmt);
+                if (peek().type == TokenTypes::SEMICOLON)
+                    advance();
+            }
+            except(TokenTypes::RIGHT_BRACE);
+        }
+    }
+    Node* parseStructStatment() {
+        advance();
+        Node* Name = new IdentifierNode(peek());
+        except(TokenTypes::IDENTIFIER);
+        StructDeclaration* Struct = new StructDeclaration(Name);
+        parseObject(0,Struct);
+        return Struct;
+    }
+    Node *parseStatment(int loop = 0,int object = 0) {
         if (isType(peek().type))
             return parseVariableDeclaration();
         if (peek().type == TokenTypes::IF)
@@ -2134,8 +2506,14 @@ public:
             return parseForStatment(loop + 1);
         if (peek().type == TokenTypes::RETURN)
             return parseReturnStatment();
-        if (peek().type == TokenTypes::FUNCTION)
-            return parseFunction();
+        if ((peek().type == TokenTypes::FUNCTION)||((peek().type == TokenTypes::VIRTUAL || peek().type == TokenTypes::OVERRIDE || peek().type==TokenTypes::FRIEND || peek().type == TokenTypes::STATIC) && object))
+            return parseFunction(object);
+        if (peek().type == TokenTypes::SEA)
+            return parseDestructor();
+        if (peek().type==TokenTypes::STRUCT)
+            return parseStructStatment();
+        if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type == TokenTypes::LEFT_PAREN)
+            return parseCalleeExpression();
         return parseExpressionStatment();
     }
 
