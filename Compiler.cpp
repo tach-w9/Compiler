@@ -338,6 +338,18 @@ string tokenTypeToString(TokenTypes type) {
 
         case TokenTypes::DIVIDE_EQUAL:
             return "DIVIDE_EQUAL";
+        case TokenTypes::SEA:
+            return "TLIDE";
+        case TokenTypes::DEFAULT:
+            return "DEFAULT";
+        case TokenTypes::OVERRIDE:
+            return "OVERRIDE";
+        case TokenTypes::STATIC:
+            return "STATIC";
+        case TokenTypes::VIRTUAL:
+            return "VIRTUAL";
+        case TokenTypes::FRIEND:
+            return "FRIEND";
     }
 
     return "UNKNOWN";
@@ -1695,9 +1707,10 @@ private:
 public:
     Node *Callee;
     Node *Body;
-    int isAbstract;
+    int isDefault;
+    int isVirtual;
 
-    DestructorNode(Node *cal, int isAbs = 0) : Callee(cal), isAbstract(isAbs) {
+    DestructorNode(Node *cal, int isAbs = 0, int isV = 0) : Callee(cal), isDefault(isAbs), isVirtual(isV) {
         setName("Destructor");
     }
 
@@ -1716,7 +1729,11 @@ public:
         for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
-        cout << "isAbstract: " << ((isAbstract) ? "True" : "False") << endl;
+        cout << "isDefault: " << ((isDefault) ? "True" : "False") << endl;
+        for (int i = 0; i < indent + 1; i++) {
+            cout << "  ";
+        }
+        cout << "isVirtual: " << ((isVirtual) ? "True" : "False") << endl;
         for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
@@ -2383,9 +2400,9 @@ public:
                 advance();
             }
         }
-        if (isFriend || isOverride || isVirtual || isStatic)
+        if (isFriend || isOverride || isVirtual || isStatic) {
             except(TokenTypes::FUNCTION);
-        else
+        } else
             advance();
         Token name = peek();
         if (except(TokenTypes::IDENTIFIER)) {
@@ -2460,6 +2477,11 @@ public:
     }
 
     Node *parseDestructor() {
+        int isVirtual = 0;
+        if (check(TokenTypes::VIRTUAL)) {
+            isVirtual = 1;
+            advance();
+        }
         advance();
         Node *Callee = new IdentifierNode(peek());
         except(TokenTypes::IDENTIFIER);
@@ -2473,7 +2495,7 @@ public:
             isAbs = 1;
         } else
             Block = parseBlock();
-        DestructorNode *Destructor = new DestructorNode(Callee, isAbs);
+        DestructorNode *Destructor = new DestructorNode(Callee, isAbs, isVirtual);
         (*Destructor).body(Block);
         return Destructor;
     }
@@ -2555,6 +2577,8 @@ public:
             return parseForStatment(loop + 1);
         if (peek().type == TokenTypes::RETURN)
             return parseReturnStatment();
+        if (check(TokenTypes::VIRTUAL) && position + 1 < tokens.size() && tokens[position + 1].type == TokenTypes::SEA)
+            return parseDestructor();
         if ((peek().type == TokenTypes::FUNCTION) || (
                 (peek().type == TokenTypes::VIRTUAL || peek().type == TokenTypes::OVERRIDE || peek().type ==
                  TokenTypes::FRIEND || peek().type == TokenTypes::STATIC) && object))
