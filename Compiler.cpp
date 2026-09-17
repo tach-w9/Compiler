@@ -136,7 +136,7 @@ struct Token {
     }
 };
 
- string tokenTypeToString(TokenTypes type) {
+string tokenTypeToString(TokenTypes type) {
     switch (type) {
         case TokenTypes::TYPE_INT:
             return "TYPE_INT";
@@ -407,9 +407,9 @@ std::unordered_map<std::string, TokenTypes> keywords =
     {"continue", TokenTypes::CONTINUE},
     {"friend", TokenTypes::FRIEND},
     {"static", TokenTypes::STATIC},
-    {"override",TokenTypes::OVERRIDE},
+    {"override", TokenTypes::OVERRIDE},
     {"virtual", TokenTypes::VIRTUAL},
-    {"default",TokenTypes::DEFAULT}
+    {"default", TokenTypes::DEFAULT}
 };
 
 std::unordered_map<char, TokenTypes> operators =
@@ -989,11 +989,14 @@ public:
     virtual int getLoop() {
         return (*this).loop;
     }
-    friend string getName(Node* n);
+
+    friend string getName(Node *n);
 };
-string getName(Node* n) {
+
+string getName(Node *n) {
     return (*n).name;
 }
+
 class LiteralNode : public Node {
 public:
     Token val;
@@ -1378,6 +1381,7 @@ public:
 class FunctionStatment : public Node {
 private:
     string name = "Function";
+
 public:
     Token Type;
     Node *Name;
@@ -1457,243 +1461,274 @@ public:
     }
 };
 
-class ArrayDeclarationNode: public Node{
-    public:
+class ArrayDeclarationNode : public Node {
+public:
     Token Type;
-    Node* Name;
-    vector<Node* > Sizes;
-    Node* Initializer;
-    ArrayDeclarationNode(Token t,Node* n,Node* i=new EmptyNode()):Type(t),Name(n),Initializer(i){}
+    Node *Name;
+    vector<Node *> Sizes;
+    Node *Initializer;
 
-    void addSize(Node* s) {
+    ArrayDeclarationNode(Token t, Node *n, Node *i = new EmptyNode()) : Type(t), Name(n), Initializer(i) {
+    }
+
+    void addSize(Node *s) {
         Sizes.push_back(s);
     }
-    void initialize(Node* init) {
+
+    void initialize(Node *init) {
         (*this).Initializer = init;
     }
-    void print(int indent = 0) override{
+
+    void print(int indent = 0) override {
         cout << endl;
-        for(int i = 0;i<indent;i++){
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "ArrayDeclarationNode" << endl;
-        for(int i = 0;i<indent+1;i++){
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Type: " << Type.value;
-        (*Name).print(indent+1);
-        for (int i = 0;i<Sizes.size();i++) {
+        (*Name).print(indent + 1);
+        for (int i = 0; i < Sizes.size(); i++) {
             cout << endl;
-            for(int i = 0;i<indent+1;i++) {
+            for (int i = 0; i < indent + 1; i++) {
                 cout << "  ";
             }
-            cout << "Size" << i+1;
-            (*Sizes[i]).print(indent+2);
+            cout << "Size" << i + 1;
+            (*Sizes[i]).print(indent + 2);
         }
 
-        (*Initializer).print(indent+1);
+        (*Initializer).print(indent + 1);
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Dimensions: " << Sizes.size();
     }
 };
-class ArrayInit: public Node{
-    public:
-    vector<Node*> args;
 
-    void addArg(Node* arg){
+class ArrayInit : public Node {
+public:
+    vector<Node *> args;
+
+    void addArg(Node *arg) {
         args.push_back(arg);
     }
 
     void print(int indent = 0) override {
         cout << endl;
-        for(int i = 0;i<indent;i++){
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "ArrayInitializerNode";
-        for(Node* n:args){
-            (*n).print(indent+1);
+        for (Node *n: args) {
+            (*n).print(indent + 1);
         }
     }
 };
-class ArrayArg: public Node{
-    public:
-    Node* Expression;
-    ArrayArg(Node* exper):Expression(exper){}
-    void print(int indent=0) override{
+
+class ArrayArg : public Node {
+public:
+    Node *Expression;
+
+    ArrayArg(Node *exper) : Expression(exper) {
+    }
+
+    void print(int indent = 0) override {
         cout << endl;
-        for(int i = 0;i<indent;i++){
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "ArrayArg";
-        (*Expression).print(indent+1);
+        (*Expression).print(indent + 1);
     }
 };
-class ArrayAccessNode: public Node {
-public:
-    Node* Name;
-    Node* Index;
 
-    ArrayAccessNode(Node* n,Node* i):Name(n),Index(i){}
+class ArrayAccessNode : public Node {
+public:
+    Node *Name;
+    Node *Index;
+
+    ArrayAccessNode(Node *n, Node *i) : Name(n), Index(i) {
+    }
+
     void print(int indent = 0) override {
         cout << endl;
-        for (int i =0;i<indent;i++) {
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "ArrayAccessNode" << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Array";
-        (*Name).print(indent+2);
+        (*Name).print(indent + 2);
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Index";
-        (*Index).print(indent+2);
+        (*Index).print(indent + 2);
     }
 };
 
-class FieldDeclaration: public Node {
+class FieldDeclaration : public Node {
 public:
-    Node* VariableDeclaration;
-    FieldDeclaration(Node* v):VariableDeclaration(v){}
+    Node *VariableDeclaration;
+
+    FieldDeclaration(Node *v) : VariableDeclaration(v) {
+    }
+
     void print(int indent = 0) override {
         cout << endl;
-        for (int i = 0;i<indent;i++) {
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "FieldDeclaration";
-        (*VariableDeclaration).print(indent+1);
+        (*VariableDeclaration).print(indent + 1);
     }
 };
-class MemberInitializer: public Node {
+
+class MemberInitializer : public Node {
 private:
     string name = "Method";
 
 public:
-    Node* Member;
-    Node* Value;
-    MemberInitializer(Node* mem,Node* val):Member(mem),Value(val) {
+    Node *Member;
+    Node *Value;
 
+    MemberInitializer(Node *mem, Node *val) : Member(mem), Value(val) {
     }
-    void print(int indent = 0) override{
+
+    void print(int indent = 0) override {
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "MemberInitializer" << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Member";
-        (*Member).print(indent+2);
+        (*Member).print(indent + 2);
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Value";
-        (*Value).print(indent+2);
+        (*Value).print(indent + 2);
     }
 };
-class ConstructorNode: public Node {
+
+class ConstructorNode : public Node {
 private:
     string name = "ConstructorNode";
+
 public:
-    Node* ObjectName;
-    vector<Node*> Params;
-    vector<Node*> Initilizators;
-    Node* Body;
-    ConstructorNode(Node* obj_n):ObjectName(obj_n) {
+    Node *ObjectName;
+    vector<Node *> Params;
+    vector<Node *> Initilizators;
+    Node *Body;
+
+    ConstructorNode(Node *obj_n) : ObjectName(obj_n) {
         setName("Constructor");
     }
-    void addParam(Node* shii) {
+
+    void addParam(Node *shii) {
         Params.push_back(shii);
     }
-    void addInit(Node* init) {
+
+    void addInit(Node *init) {
         Initilizators.push_back(init);
     }
-    void body(Node* body) {
-        (*this).Body=body;
+
+    void body(Node *body) {
+        (*this).Body = body;
     }
+
     void print(int indent = 0) override {
         cout << endl;
-        for (int i =0;i<indent;i++) {
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "ConstructorNode";
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "ObjectName";
-        (*ObjectName).print(indent+2);
+        (*ObjectName).print(indent + 2);
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Parameters";
-        for (Node* n:Params) {
-            (*n).print(indent+2);
+        for (Node *n: Params) {
+            (*n).print(indent + 2);
         }
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Initializators";
-        for (Node* init:Initilizators) {
-            (*init).print(indent+2);
+        for (Node *init: Initilizators) {
+            (*init).print(indent + 2);
         }
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Body";
-        (*Body).print(indent+2);
+        (*Body).print(indent + 2);
     }
 };
-class DestructorNode: public Node {
+
+class DestructorNode : public Node {
 private:
     string name = "DestructorNode";
+
 public:
-    Node* Callee;
-    Node* Body;
+    Node *Callee;
+    Node *Body;
     int isAbstract;
-    DestructorNode(Node* cal,int isAbs=0):Callee(cal),isAbstract(isAbs) {
+
+    DestructorNode(Node *cal, int isAbs = 0) : Callee(cal), isAbstract(isAbs) {
         setName("Destructor");
     }
-    void body(Node* body) {
-        (*this).Body=body;
+
+    void body(Node *body) {
+        (*this).Body = body;
     }
+
     void print(int indent = 0) override {
         cout << endl;
-        for (int i = 0;i<indent;i++) {
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "DestructorNode";
-        (*Callee).print(indent+1);
+        (*Callee).print(indent + 1);
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
-        cout << "isAbstract: " << ((isAbstract)?"True":"False") << endl;
-        for (int i = 0;i<indent+1;i++) {
+        cout << "isAbstract: " << ((isAbstract) ? "True" : "False") << endl;
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Body";
-        (*Body).print(indent+2);
+        (*Body).print(indent + 2);
     }
 };
+
 class MethodStatment : public Node {
 private:
     string name = "MethodStatmen";
+
 public:
     Token Type;
     Node *Name;
@@ -1704,7 +1739,8 @@ public:
     int isStatic;
     int isVirtual;
 
-    MethodStatment(Token t, Node *b, Node *n,int f = 0,int o = 0,int s = 0,int v = 0) : Type(t), Name(n), Body(b),isFriend(f),isOverride(o),isStatic(s),isVirtual(v) {
+    MethodStatment(Token t, Node *b, Node *n, int f = 0, int o = 0, int s = 0, int v = 0) : Type(t), Name(n), Body(b),
+        isFriend(f), isOverride(o), isStatic(s), isVirtual(v) {
         setName("MethodStatment");
     }
 
@@ -1742,78 +1778,86 @@ public:
         cout << "Body";
         (*Body).print(indent + 2);
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
-        cout << "isVirtual: " << ((isVirtual)?"True":"False") << endl;
-        for (int i = 0;i<indent+1;i++) {
+        cout << "isVirtual: " << ((isVirtual) ? "True" : "False") << endl;
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
-        cout << "isOverride: " << ((isOverride)?"True":"False") << endl;
-        for (int i = 0;i<indent+1;i++) {
+        cout << "isOverride: " << ((isOverride) ? "True" : "False") << endl;
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
-        cout << "isStatic: " << ((isStatic)?"True":"False") << endl;
-        for (int i = 0;i<indent+1;i++) {
+        cout << "isStatic: " << ((isStatic) ? "True" : "False") << endl;
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
-        cout << "isFriend: " << ((isFriend)?"True":"False");
+        cout << "isFriend: " << ((isFriend) ? "True" : "False");
     }
 };
+
 class StructDeclaration : public Node {
 public:
-    Node* Name;
-    Node* Constructor = new EmptyNode();
-    Node* Destructor = new EmptyNode();
-    vector<Node*> Fields;
-    vector<Node*> Methods;
-    Node* Body = new EmptyNode();
-    StructDeclaration(Node* n):Name(n){}
-    void addField(Node* field) {
+    Node *Name;
+    Node *Constructor = new EmptyNode();
+    Node *Destructor = new EmptyNode();
+    vector<Node *> Fields;
+    vector<Node *> Methods;
+    Node *Body = new EmptyNode();
+
+    StructDeclaration(Node *n) : Name(n) {
+    }
+
+    void addField(Node *field) {
         Fields.push_back(field);
     }
-    void addMethod(Node* method) {
+
+    void addMethod(Node *method) {
         Methods.push_back(method);
     }
-    void body(Node* body) {
-        (*this).Body=body;
+
+    void body(Node *body) {
+        (*this).Body = body;
     }
-    void constructor(Node* conster) {
-        (*this).Constructor=conster;
+
+    void constructor(Node *conster) {
+        (*this).Constructor = conster;
     }
-    void destructor(Node* dester) {
-        (*this).Destructor=dester;
+
+    void destructor(Node *dester) {
+        (*this).Destructor = dester;
     }
+
     void print(int indent = 0) override {
         cout << endl;
-        for (int i = 0;i<indent;i++) {
+        for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
         cout << "StructDeclaration" << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Name";
-        (*Name).print(indent+2);
+        (*Name).print(indent + 2);
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Fields";
-        for (Node* n:Fields) {
-            (*n).print(indent+2);
+        for (Node *n: Fields) {
+            (*n).print(indent + 2);
         }
         cout << endl;
-        for (int i = 0;i<indent+1;i++) {
+        for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
         cout << "Methods";
-        for (Node* Method:Methods) {
-            (*Method).print(indent+2);
+        for (Node *Method: Methods) {
+            (*Method).print(indent + 2);
         }
-        (*Constructor).print(indent+1);
-        (*Destructor).print(indent+1);
-
+        (*Constructor).print(indent + 1);
+        (*Destructor).print(indent + 1);
     }
 };
 
@@ -1881,8 +1925,9 @@ public:
             advance();
             return 1;
         }
-        throw std::runtime_error("Type is not the same! Type: " + tokenTypeToString(peek().type) + " value: " + peek().value
-                    + "Line: " + to_string(peek().line) + "Col: " + to_string(peek().column));
+        throw std::runtime_error(
+            "Type is not the same! Type: " + tokenTypeToString(peek().type) + " value: " + peek().value
+            + "Line: " + to_string(peek().line) + "Col: " + to_string(peek().column));
         return 0;
     }
 
@@ -2119,20 +2164,21 @@ public:
         return new ExpressionStatment(parseExpression());
     }
 
-    Node* parseArrayAssignment(){
-        ArrayInit* arr = new ArrayInit();
-        while(!check(TokenTypes::RIGHT_BRACE)){
+    Node *parseArrayAssignment() {
+        ArrayInit *arr = new ArrayInit();
+        while (!check(TokenTypes::RIGHT_BRACE)) {
             if (check(TokenTypes::LEFT_BRACE)) {
                 advance();
                 (*arr).addArg(parseArrayAssignment());
-            }else
+            } else
                 (*arr).addArg(new ArrayArg(parseExpression()));
-            if(check(TokenTypes::COMMA))
+            if (check(TokenTypes::COMMA))
                 advance();
         }
         except(TokenTypes::RIGHT_BRACE);
         return arr;
     }
+
     Node *parseVariableDeclaration() {
         Token type = peek();
         advance();
@@ -2146,17 +2192,17 @@ public:
         Node *identifier = new IdentifierNode(ident);
         advance();
         if (check(TokenTypes::LEFT_BRACKET)) {
-            ArrayDeclarationNode* array_declaration_node = new ArrayDeclarationNode(type,identifier);
+            ArrayDeclarationNode *array_declaration_node = new ArrayDeclarationNode(type, identifier);
             Node *expression = new EmptyNode();
-            while(peek().type==TokenTypes::LEFT_BRACKET) {
+            while (peek().type == TokenTypes::LEFT_BRACKET) {
                 advance();
-                Node* Size = parseExpression();
+                Node *Size = parseExpression();
                 except(TokenTypes::RIGHT_BRACKET);
                 (*array_declaration_node).addSize(Size);
             }
-            if(check(TokenTypes::EQUAL)){
+            if (check(TokenTypes::EQUAL)) {
                 advance();
-                if(except(TokenTypes::LEFT_BRACE)){
+                if (except(TokenTypes::LEFT_BRACE)) {
                     expression = parseArrayAssignment();
                 }
             }
@@ -2321,25 +2367,23 @@ public:
         int isOverride = 0;
         int isVirtual = 0;
         int isStatic = 0;
-        while (check(TokenTypes::FRIEND)||check(TokenTypes::STATIC)||check(TokenTypes::VIRTUAL)||check(TokenTypes::OVERRIDE)) {
+        while (check(TokenTypes::FRIEND) || check(TokenTypes::STATIC) || check(TokenTypes::VIRTUAL) || check(
+                   TokenTypes::OVERRIDE)) {
             if (check(TokenTypes::FRIEND)) {
-                isFriend=1;
+                isFriend = 1;
                 advance();
-            }
-            else if (check(TokenTypes::STATIC)) {
-                isStatic=1;
+            } else if (check(TokenTypes::STATIC)) {
+                isStatic = 1;
                 advance();
-            }
-            else if (check(TokenTypes::VIRTUAL)) {
-                isVirtual=1;
+            } else if (check(TokenTypes::VIRTUAL)) {
+                isVirtual = 1;
                 advance();
-            }
-            else if (check(TokenTypes::OVERRIDE)) {
-                isOverride=1;
+            } else if (check(TokenTypes::OVERRIDE)) {
+                isOverride = 1;
                 advance();
             }
         }
-        if (isFriend||isOverride||isVirtual||isStatic)
+        if (isFriend || isOverride || isVirtual || isStatic)
             except(TokenTypes::FUNCTION);
         else
             advance();
@@ -2357,8 +2401,9 @@ public:
                 }
                 Node *Body = parseBlock();
                 if (object) {
-                    MethodStatment* method = new MethodStatment(Type,Body,Name,isFriend,isOverride,isStatic,isVirtual);
-                    for (int i = 0;i<params.size();i++) {
+                    MethodStatment *method = new MethodStatment(Type, Body, Name, isFriend, isOverride, isStatic,
+                                                                isVirtual);
+                    for (int i = 0; i < params.size(); i++) {
                         (*method).addParam(params[i]);
                     }
                     return method;
@@ -2392,8 +2437,8 @@ public:
             except(TokenTypes::RIGHT_PAREN);
             if (check(TokenTypes::DOUBLE_POINTS)) {
                 advance();
-                ConstructorNode* Constructor = new ConstructorNode(Callee);
-                for (Node* Arg:Args) {
+                ConstructorNode *Constructor = new ConstructorNode(Callee);
+                for (Node *Arg: Args) {
                     (*Constructor).addParam(Arg);
                 }
                 while (!check(TokenTypes::LEFT_BRACE)) {
@@ -2401,7 +2446,7 @@ public:
                     if (check(TokenTypes::COMMA))
                         advance();
                 }
-                Node* Body = parseBlock();
+                Node *Body = parseBlock();
                 (*Constructor).body(Body);
                 return Constructor;
             }
@@ -2413,69 +2458,71 @@ public:
         }
         return new EmptyNode();
     }
-    Node* parseDestructor() {
+
+    Node *parseDestructor() {
         advance();
-        Node* Callee = new IdentifierNode(peek());
+        Node *Callee = new IdentifierNode(peek());
         except(TokenTypes::IDENTIFIER);
         except(TokenTypes::LEFT_PAREN);
         except(TokenTypes::RIGHT_PAREN);
         int isAbs = 0;
-        Node* Block = new EmptyNode();
+        Node *Block = new EmptyNode();
         if (check(TokenTypes::EQUAL)) {
             advance();
             except(TokenTypes::DEFAULT);
-            isAbs=1;
-        }else
+            isAbs = 1;
+        } else
             Block = parseBlock();
-        DestructorNode* Destructor = new DestructorNode(Callee,isAbs);
+        DestructorNode *Destructor = new DestructorNode(Callee, isAbs);
         (*Destructor).body(Block);
         return Destructor;
-
     }
 
-    Node* parseArrayAccessNode(){
-        Node* name = new EmptyNode();
+    Node *parseArrayAccessNode() {
+        Node *name = new EmptyNode();
         if (check(TokenTypes::IDENTIFIER)) {
             name = new IdentifierNode(peek());
             advance();
         }
         if (except(TokenTypes::LEFT_BRACKET)) {
-            Node* index = parseExpression();
-            Node* shiiit = new ArrayAccessNode(name,index);
+            Node *index = parseExpression();
+            Node *shiiit = new ArrayAccessNode(name, index);
             except(TokenTypes::RIGHT_BRACKET);
             while (check(TokenTypes::LEFT_BRACKET)) {
                 advance();
-                Node* nextIndex = parseExpression();
+                Node *nextIndex = parseExpression();
 
                 except(TokenTypes::RIGHT_BRACKET);
-                shiiit = new ArrayAccessNode(shiiit,nextIndex);
+                shiiit = new ArrayAccessNode(shiiit, nextIndex);
             }
 
             return shiiit;
         }
         return new EmptyNode();
     }
-    Node* parseMemberInitializer() {
-        Node* name = new IdentifierNode(peek());
+
+    Node *parseMemberInitializer() {
+        Node *name = new IdentifierNode(peek());
         except(TokenTypes::IDENTIFIER);
         except(TokenTypes::LEFT_PAREN);
-        Node* Value = parseExpression();
+        Node *Value = parseExpression();
         except(TokenTypes::RIGHT_PAREN);
-        return new MemberInitializer(name,Value);
+        return new MemberInitializer(name, Value);
     }
-    void parseObject(int isClass = 0,auto Struct = new EmptyNode()) {
+
+    void parseObject(int isClass = 0, auto Struct = new EmptyNode()) {
         Block *block = new Block();
         if (except(TokenTypes::LEFT_BRACE)) {
             while (peek().type != TokenTypes::RIGHT_BRACE) {
-                Node *stmt = parseStatment(0,1);
-                if (getName(stmt)=="VariableDeclarationNode") {
+                Node *stmt = parseStatment(0, 1);
+                if (getName(stmt) == "VariableDeclarationNode") {
                     stmt = new FieldDeclaration(stmt);
                     (*Struct).addField(stmt);
-                }else if (getName(stmt)=="Constructor")
+                } else if (getName(stmt) == "Constructor")
                     (*Struct).constructor(stmt);
-                else if (getName(stmt)=="Destructor")
+                else if (getName(stmt) == "Destructor")
                     (*Struct).destructor(stmt);
-                else if (getName(stmt)=="MethodStatment")
+                else if (getName(stmt) == "MethodStatment")
                     (*Struct).addMethod(stmt);
                 if (peek().type == TokenTypes::SEMICOLON)
                     advance();
@@ -2483,15 +2530,17 @@ public:
             except(TokenTypes::RIGHT_BRACE);
         }
     }
-    Node* parseStructStatment() {
+
+    Node *parseStructStatment() {
         advance();
-        Node* Name = new IdentifierNode(peek());
+        Node *Name = new IdentifierNode(peek());
         except(TokenTypes::IDENTIFIER);
-        StructDeclaration* Struct = new StructDeclaration(Name);
-        parseObject(0,Struct);
+        StructDeclaration *Struct = new StructDeclaration(Name);
+        parseObject(0, Struct);
         return Struct;
     }
-    Node *parseStatment(int loop = 0,int object = 0) {
+
+    Node *parseStatment(int loop = 0, int object = 0) {
         if (isType(peek().type))
             return parseVariableDeclaration();
         if (peek().type == TokenTypes::IF)
@@ -2506,13 +2555,16 @@ public:
             return parseForStatment(loop + 1);
         if (peek().type == TokenTypes::RETURN)
             return parseReturnStatment();
-        if ((peek().type == TokenTypes::FUNCTION)||((peek().type == TokenTypes::VIRTUAL || peek().type == TokenTypes::OVERRIDE || peek().type==TokenTypes::FRIEND || peek().type == TokenTypes::STATIC) && object))
+        if ((peek().type == TokenTypes::FUNCTION) || (
+                (peek().type == TokenTypes::VIRTUAL || peek().type == TokenTypes::OVERRIDE || peek().type ==
+                 TokenTypes::FRIEND || peek().type == TokenTypes::STATIC) && object))
             return parseFunction(object);
         if (peek().type == TokenTypes::SEA)
             return parseDestructor();
-        if (peek().type==TokenTypes::STRUCT)
+        if (peek().type == TokenTypes::STRUCT)
             return parseStructStatment();
-        if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type == TokenTypes::LEFT_PAREN)
+        if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type ==
+            TokenTypes::LEFT_PAREN)
             return parseCalleeExpression();
         return parseExpressionStatment();
     }
