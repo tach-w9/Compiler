@@ -2317,13 +2317,6 @@ public:
             else
                 return parseAddressOfNode();
         }
-
-        if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type ==
-            TokenTypes::LEFT_PAREN)
-            return parseCalleeExpression();
-        if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type ==
-            TokenTypes::LEFT_BRACKET)
-            return parseArrayAccessNode();
         if (isValue(peek().type)) {
             Token token = peek();
             advance();
@@ -2368,12 +2361,67 @@ public:
         if (isUnary(peek().type)) {
             Token op = peek();
             advance();
+
             Node *operand = parseUnary();
+
             return new UnaryNode(operand, op);
         }
-        return parsePointerAccessNode(parseMemberAccessNode(parsePrimary()));
-    }
 
+        Node* node = parsePrimary();
+
+        while (true) {
+            if (check(TokenTypes::POINT)) {
+                advance();
+
+                Token member = peek();
+                except(TokenTypes::IDENTIFIER);
+
+                node = new MemberAccessNode(
+                    node,
+                    new IdentifierNode(member)
+                );
+
+                continue;
+            }
+
+            // object->member
+            if (check(TokenTypes::ARROW_RIGHT)) {
+                advance();
+
+                Token member = peek();
+                except(TokenTypes::IDENTIFIER);
+
+                node = new PointerAccessNode(
+                    node,
+                    new IdentifierNode(member)
+                );
+
+                continue;
+            }
+            if (check(TokenTypes::LEFT_PAREN)) {
+                node = parseCalleeExpression(node);
+                continue;
+            }
+            if (check(TokenTypes::LEFT_BRACKET)) {
+                advance();
+
+                Node* index = parseExpression();
+
+                except(TokenTypes::RIGHT_BRACKET);
+
+                node = new ArrayAccessNode(
+                    node,
+                    index
+                );
+
+                continue;
+            }
+
+            break;
+        }
+
+        return node;
+    }
     Node *parseFactor() {
         Node *left = parseUnary();
         while (isFactor(peek().type)) {
@@ -2468,6 +2516,17 @@ public:
     }
 
     Node *parseVariableDeclaration(int isObject = 0) {
+        if (isObject &&
+        position + 1 < tokens.size() &&
+        tokens[position + 1].type == TokenTypes::LEFT_PAREN) {
+
+            Node* Callee = new IdentifierNode(peek());
+
+            return parseCalleeExpression(
+                1,
+                Callee
+            );
+    }
         Token type = peek();
         advance();
         int isProp = 0;
@@ -2798,6 +2857,32 @@ public:
         }
         return new EmptyNode();
     }
+    Node* parseCalleeExpression(Node* callee) {
+        except(TokenTypes::LEFT_PAREN);
+
+        vector<Node*> Args;
+
+        while (!check(TokenTypes::RIGHT_PAREN)) {
+            if (isType(peek().type))
+                Args.push_back(parseVariableDeclaration());
+            else
+                Args.push_back(parseExpression());
+
+            if (check(TokenTypes::COMMA))
+                advance();
+            else
+                break;
+        }
+
+        except(TokenTypes::RIGHT_PAREN);
+
+        CallExpression* call = new CallExpression(callee);
+
+        for (Node* arg : Args)
+            call->addArg(arg);
+
+        return call;
+    }
 
     Node *parseDestructor() {
         int isVirtual = 0;
@@ -2941,7 +3026,7 @@ public:
 
     }
     Node *parseStatment(int loop = 0, int object = 0) {
-        if (isType(peek().type))
+        if (isType(peek().type)||isObject())
             return parseVariableDeclaration();
         if (peek().type == TokenTypes::IF)
             return parseIfStatment(loop);
