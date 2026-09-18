@@ -350,6 +350,10 @@ string tokenTypeToString(TokenTypes type) {
             return "VIRTUAL";
         case TokenTypes::FRIEND:
             return "FRIEND";
+        case TokenTypes::PUBLIC:
+            return "PUBLIC";
+        case TokenTypes::PRIVATE:
+            return "PRIVATE";
     }
 
     return "UNKNOWN";
@@ -1107,21 +1111,33 @@ public:
     Token type;
     Node *identifier;
     Node *Initializer;
+    int isObject;
+    int isProp;
+    Node* Type;
 
-    VariableDeclarationNode(Node *Init, Token type, Node *ident) : Initializer(Init), identifier(ident), type(type) {
+    VariableDeclarationNode(Node *Init, Token type, Node *ident, int isobj=0,int isProp = 0,Node* t = nullptr) : Initializer(Init), identifier(ident), type(type),isObject(isobj),isProp(isProp),Type(t) {
         setName("VariableDeclarationNode");
     }
 
+    void construct(Node* conster) {
+        Initializer=conster;
+    }
     void print(int indent = 0) override {
         cout << endl;
         for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
-        cout << "VariableDeclaration" << endl;
-        for (int i = 0; i < indent + 1; i++) {
-            cout << "  ";
-        }
-        cout << "Type: " << type.value;
+        cout << "VariableDeclaration";
+
+        if (!isProp) {
+            cout << endl;
+            for (int i = 0; i < indent + 1; i++) {
+                cout << "  ";
+            }
+            cout << "Type: " << type.value;
+        }else
+            (*Type).print(indent+1);
+
         for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
@@ -1133,6 +1149,11 @@ public:
 
         cout << "Initializer";
         (*Initializer).print(indent + 2);
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "isObject: " << ((isObject)?"True":"False");
     }
 };
 
@@ -1399,8 +1420,9 @@ public:
     Node *Name;
     vector<Node *> Parameters;
     Node *Body;
-
-    FunctionStatment(Token t, Node *b, Node *n) : Type(t), Name(n), Body(b) {
+    Node* type;
+    int isProp;
+    FunctionStatment(Token t, Node *b, Node *n,int isProp = 0,Node* T=nullptr) : Type(t), Name(n), Body(b),type(T),isProp(isProp) {
     }
 
     void addParam(Node *p) {
@@ -1412,11 +1434,17 @@ public:
         for (int i = 0; i < indent; i++) {
             cout << "  ";
         }
-        cout << "FunctionStatement" << endl;
-        for (int i = 0; i < indent + 1; i++) {
-            cout << "  ";
+        cout << "FunctionStatement";
+        if (!isProp) {
+            cout << endl;
+            for (int i = 0; i < indent + 1; i++) {
+                cout << "  ";
+            }
+            cout << "Type: " << Type.value << endl;
+        }else {
+            (*type).print(indent+1);
+            cout << endl;
         }
-        cout << "Type: " << Type.value << endl;
         for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
@@ -1814,22 +1842,43 @@ public:
     }
 };
 
+class PublicNode: public Node {
+private:
+    string name = "PublicNode";
+public:
+    PublicNode() {
+        setName("PublicNode");
+    }
+    void print(int indent = 0)override{}
+};
+class PrivateNode: public Node {
+private:
+    string name = "PrivateNode";
+public:
+    PrivateNode() {
+        setName("PrivateNode");
+    }
+    void print(int indent=0)override{}
+};
 class StructDeclaration : public Node {
 public:
     Node *Name;
     Node *Constructor = new EmptyNode();
     Node *Destructor = new EmptyNode();
-    vector<Node *> Fields;
+    vector<Node *> PrivateFields;
+    vector<Node *> PublicFields;
     vector<Node *> Methods;
     Node *Body = new EmptyNode();
 
     StructDeclaration(Node *n) : Name(n) {
     }
 
-    void addField(Node *field) {
-        Fields.push_back(field);
+    void addPrivateField(Node *field) {
+        PrivateFields.push_back(field);
     }
-
+    void addPublicField(Node* field) {
+        PublicFields.push_back(field);
+    }
     void addMethod(Node *method) {
         Methods.push_back(method);
     }
@@ -1861,12 +1910,20 @@ public:
         for (int i = 0; i < indent + 1; i++) {
             cout << "  ";
         }
-        cout << "Fields";
-        for (Node *n: Fields) {
+        cout << "PrivateFields";
+        for (Node *n: PrivateFields) {
             (*n).print(indent + 2);
         }
         cout << endl;
         for (int i = 0; i < indent + 1; i++) {
+            cout << "  ";
+        }
+        cout << "PublicFields";
+        for (Node* n:PublicFields) {
+            (*n).print(indent+2);
+        }
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
             cout << "  ";
         }
         cout << "Methods";
@@ -1878,6 +1935,179 @@ public:
     }
 };
 
+class ClassDeclaration: public Node {
+    public:
+    Node* Name;
+    Node* Constructor = new EmptyNode();
+    Node* Destructor = new EmptyNode();
+    vector<Node*> PrivateFields;
+    vector<Node*> PublicFields;
+    vector<Node*> Methods;
+    ClassDeclaration(Node* Name):Name(Name){}
+    void constructor(Node* conster) {
+        (*this).Constructor=conster;
+    }
+    void destructor(Node* dester) {
+        (*this).Destructor=dester;
+    }
+    void addPrivateField(Node* Field) {
+        (*this).PrivateFields.push_back(Field);
+    }
+    void addPublicField(Node* Field) {
+        (*this).PublicFields.push_back(Field);
+    }
+    void addMethod(Node* Field) {
+        (*this).Methods.push_back(Field);
+    }
+    void print(int indent = 0) override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "ClassDeclaration" << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "PrivateFields";
+        for (Node* n:PrivateFields) {
+            (*n).print(indent+2);
+        }
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "PublicFields";
+        for (Node* n:PublicFields) {
+            (*n).print(indent+2);
+        }
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Methods";
+        for (Node* n:Methods) {
+            (*n).print(indent+2);
+        }
+        (*Constructor).print(indent+1);
+        (*Destructor).print(indent+1);
+
+
+    }
+};
+class PointerType: public Node {
+public:
+    Node* Type;
+    Token type;
+    int isManPtr;
+    PointerType(Token T,const int M=0,Node* t=new EmptyNode()):Type(t),type(T),isManPtr(M){}
+    void print(int indent = 0) override {
+        cout << endl;
+        for (int  i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "PointerType";
+        if (!isManPtr) {
+            cout << endl;
+            for (int i = 0;i<indent+2;i++) {
+                cout << "  ";
+            }
+
+            cout << "BaseType: " << type.value;
+        }else
+            (*Type).print(indent+2);
+    }
+};
+class RefereceType: public Node {
+public:
+    Token Type;
+    RefereceType(Token t):Type(t){}
+    void print(int indent = 0) override {
+        cout << endl;
+        for (int  i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "ReferenceType" << endl;
+        for (int i = 0;i<indent+2;i++) {
+            cout << "  ";
+        }
+        cout << "BaseType: " << Type.value;
+    }
+};
+class MemberAccessNode: public Node {
+public:
+    Node* Object;
+    Node* Member;
+    MemberAccessNode(Node* obj = new EmptyNode,Node* Member=new EmptyNode):Object(obj),Member(Member){}
+    void print(int indent = 0) override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "MemberAccessNode" << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Object";
+        (*Object).print(indent+2);
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Member";
+        (*Member).print(indent+2);
+    }
+};
+class PointerAccessNode: public Node {
+public:
+    Node* Object;
+    Node* Member;
+    PointerAccessNode(Node* obj = new EmptyNode,Node* mem = new EmptyNode):Object(obj),Member(mem){}
+    void print(int indent = 0)override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "PointerAccessNode" << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Object";
+        (*Object).print(indent+2);
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Member";
+        (*Member).print(indent+2);
+    }
+
+};
+class DereferenceNode: public Node {
+public:
+    Node* Expression;
+    DereferenceNode(Node* exper):Expression(exper){}
+    void print(int indent = 0)override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "DereferenceNode";
+        (*Expression).print(indent+1);
+    }
+};
+class AddressNode: public Node {
+public:
+    Node* Identifier;
+    AddressNode(Node* ident):Identifier(ident){}
+    void print(int indent = 0) override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "AddressNode";
+        (*Identifier).print(indent+1);
+    }
+};
 class Program : public Node {
 public:
     vector<Node *> nodes;
@@ -1896,7 +2126,7 @@ public:
 
     ~Program() {
         for (auto ptr: nodes) {
-            delete[] ptr;
+            delete ptr;
         }
         nodes.clear();
     }
@@ -1906,11 +2136,13 @@ class Parser {
 public:
     vector<Token> tokens;
     int position = 0;
-
+    vector<string> objects;
     Parser(vector<Token> tokens) : tokens(tokens) {
         skipCommentes();
     }
-
+    void addObject(string thing) {
+        objects.push_back(thing);
+    }
     void skipCommentes() {
         for (int i = 0; i < tokens.size(); i++) {
             if (tokens[i].type == TokenTypes::COMMENT)
@@ -1943,7 +2175,7 @@ public:
             return 1;
         }
         throw std::runtime_error(
-            "Type is not the same! Type: " + tokenTypeToString(peek().type) + " value: " + peek().value
+            "Type is not the same! For Type:  "+tokenTypeToString(type)+"to Type: " + tokenTypeToString(peek().type) + " value: " + peek().value
             + "Line: " + to_string(peek().line) + "Col: " + to_string(peek().column));
         return 0;
     }
@@ -2022,11 +2254,18 @@ public:
             case TokenTypes::TYPE_FLOAT:
             case TokenTypes::TYPE_INT:
             case TokenTypes::TYPE_STRING:
+            case TokenTypes::VOID:
                 return 1;
         }
         return 0;
     }
-
+    int isObject() {
+        for (const string name:objects) {
+            if (peek().value==name)
+                return 1;
+        }
+        return 0;
+    }
     int isComparison(TokenTypes type) {
         switch (type) {
             case TokenTypes::BIGGER_THAN:
@@ -2072,6 +2311,16 @@ public:
     }
 
     Node *parsePrimary() {
+        if ((check(TokenTypes::MULTIPLY)||check(TokenTypes::SINGLE_AND))&&position+1<tokens.size()&&(tokens[position+1].type==TokenTypes::LEFT_PAREN||tokens[position+1].type==TokenTypes::IDENTIFIER)) {
+            if (check(TokenTypes::MULTIPLY))
+                return parseDereferenceNode();
+            else
+                return parseAddressOfNode();
+        }
+
+        if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type ==
+            TokenTypes::LEFT_PAREN)
+            return parseCalleeExpression();
         if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type ==
             TokenTypes::LEFT_BRACKET)
             return parseArrayAccessNode();
@@ -2093,6 +2342,28 @@ public:
                 peek().line));
     }
 
+    Node* parseMemberAccessNode(Node* object) {
+        while (check(TokenTypes::POINT)) {
+            cout << endl << "Member";
+            advance();
+
+            Token member = peek();
+            except(TokenTypes::IDENTIFIER);
+
+            object = new MemberAccessNode(object, new IdentifierNode(member));
+        }
+        return object;
+    }
+    Node* parsePointerAccessNode(Node* object) {
+        while (check(TokenTypes::ARROW_RIGHT)) {
+            cout << endl << "Pointer";
+            advance();
+            Token member = peek();
+            except(TokenTypes::IDENTIFIER);
+            object = new PointerAccessNode(object,new IdentifierNode(member));
+        }
+        return object;
+    }
     Node *parseUnary() {
         if (isUnary(peek().type)) {
             Token op = peek();
@@ -2100,7 +2371,7 @@ public:
             Node *operand = parseUnary();
             return new UnaryNode(operand, op);
         }
-        return parsePrimary();
+        return parsePointerAccessNode(parseMemberAccessNode(parsePrimary()));
     }
 
     Node *parseFactor() {
@@ -2196,10 +2467,38 @@ public:
         return arr;
     }
 
-    Node *parseVariableDeclaration() {
+    Node *parseVariableDeclaration(int isObject = 0) {
         Token type = peek();
         advance();
-
+        int isProp = 0;
+        Node* Type = new EmptyNode();
+        if (check(TokenTypes::SINGLE_AND)) {
+            Type=new RefereceType(type);
+            isProp=1;
+            advance();
+        }
+        else if (check(TokenTypes::MULTIPLY)){
+            Type = new PointerType(type);
+            isProp=1;
+            advance();
+        }else if (check(TokenTypes::POWER)) {
+            int ptrs=2;
+            advance();
+            while(check(TokenTypes::POWER)||check(TokenTypes::MULTIPLY)) {
+                if (check(TokenTypes::MULTIPLY))
+                    ptrs++;
+                else
+                    ptrs+=2;
+                advance();
+            }
+            Node* ptr = new PointerType(type);
+            for (int i = 0;i<ptrs-1;i++) {
+                ptr=new PointerType(type,1,ptr);
+            }
+            Type=ptr;
+            isProp=1;
+        }
+        Node* construct = new EmptyNode();
         if (!isIdentifier(peek().type))
             throw std::runtime_error(
                 "Expected identifier after type definition!, Type: " + tokenTypeToString(peek().type) + " value: " +
@@ -2207,7 +2506,11 @@ public:
 
         Token ident = peek();
         Node *identifier = new IdentifierNode(ident);
-        advance();
+        if (position + 1 < tokens.size() &&
+            tokens[position + 1].type == TokenTypes::LEFT_PAREN)
+            construct = parseCalleeExpression(1, new IdentifierNode(type));
+        else
+            advance();
         if (check(TokenTypes::LEFT_BRACKET)) {
             ArrayDeclarationNode *array_declaration_node = new ArrayDeclarationNode(type, identifier);
             Node *expression = new EmptyNode();
@@ -2234,7 +2537,10 @@ public:
             expression = parseExpression();
         }
         Node *initializer = new Initializer(expression);
-        return new VariableDeclarationNode(initializer, type, identifier);
+        VariableDeclarationNode* variable = new VariableDeclarationNode(initializer, type, identifier,isObject,isProp,Type);
+        if (isObject)
+            (*variable).construct(construct);
+        return variable;
     }
 
     Node *parseCondition() {
@@ -2412,10 +2718,22 @@ public:
                 vector<Node *> params = parseParameters();
                 Token Type = Token(TokenTypes::UNKNOWN, 0, 0, "");
                 Type.value = "";
-                if (isType(peek().type)) {
+                if (isType(peek().type)||isObject()) {
                     Type = peek();
                     advance();
                 }
+                Node* type = new EmptyNode();
+                int isProp = 0;
+                if (check(TokenTypes::SINGLE_AND)) {
+                    isProp=1;
+                    type=new RefereceType(Type);
+                    advance();
+                }else if (check(TokenTypes::MULTIPLY)) {
+                    isProp=1;
+                    type=new PointerType(Type);
+                    advance();
+                }
+
                 Node *Body = parseBlock();
                 if (object) {
                     MethodStatment *method = new MethodStatment(Type, Body, Name, isFriend, isOverride, isStatic,
@@ -2425,7 +2743,7 @@ public:
                     }
                     return method;
                 }
-                FunctionStatment *fun = new FunctionStatment(Type, Body, Name);
+                FunctionStatment *fun = new FunctionStatment(Type, Body, Name,isProp,type);
                 for (int i = 0; i < params.size(); i++) {
                     (*fun).addParam(params[i]);
                 }
@@ -2437,9 +2755,14 @@ public:
         return new EmptyNode();
     }
 
-    Node *parseCalleeExpression() {
-        Node *Callee = new IdentifierNode(peek());
+    Node *parseCalleeExpression(int isObject=0,Node* callee=new EmptyNode()) {
+        Node *Callee = new EmptyNode();
+        if (isObject)
+            Callee=callee;
+        else
+            Callee=new IdentifierNode(peek());
         advance();
+
         if (except(TokenTypes::LEFT_PAREN)) {
             vector<Node *> Args;
 
@@ -2532,36 +2855,91 @@ public:
         return new MemberInitializer(name, Value);
     }
 
-    void parseObject(int isClass = 0, auto Struct = new EmptyNode()) {
+    void parseObject(int isClass = 0, Node* target = new EmptyNode()) {
         Block *block = new Block();
+        int isDefaultPublic = ((isClass)?0:1);
+        int Current = isDefaultPublic;
         if (except(TokenTypes::LEFT_BRACE)) {
             while (peek().type != TokenTypes::RIGHT_BRACE) {
                 Node *stmt = parseStatment(0, 1);
-                if (getName(stmt) == "VariableDeclarationNode") {
+                if (getName(stmt)=="PublicNode") {
+                    if (!Current)
+                        Current=!Current;
+                }
+
+                else if (getName(stmt)=="PrivateNode") {
+                    if (Current)
+                        Current=!Current;
+                }
+                else if (getName(stmt) == "VariableDeclarationNode") {
                     stmt = new FieldDeclaration(stmt);
-                    (*Struct).addField(stmt);
-                } else if (getName(stmt) == "Constructor")
-                    (*Struct).constructor(stmt);
-                else if (getName(stmt) == "Destructor")
-                    (*Struct).destructor(stmt);
-                else if (getName(stmt) == "MethodStatment")
-                    (*Struct).addMethod(stmt);
+                    if (isClass) {
+                        if (Current) (*(ClassDeclaration*)target).addPublicField(stmt);
+                        else (*(ClassDeclaration*)target).addPrivateField(stmt);
+                    } else {
+                        if (Current) (*(StructDeclaration*)target).addPublicField(stmt);
+                        else (*(StructDeclaration*)target).addPrivateField(stmt);
+                    }
+                } else if (getName(stmt) == "Constructor") {
+                    if (isClass) (*(ClassDeclaration*)target).constructor(stmt);
+                    else (*(StructDeclaration*)target).constructor(stmt);
+                } else if (getName(stmt) == "Destructor") {
+                    if (isClass) (*(ClassDeclaration*)target).destructor(stmt);
+                    else (*(StructDeclaration*)target).destructor(stmt);
+                } else if (getName(stmt) == "MethodStatment") {
+                    if (isClass) (*(ClassDeclaration*)target).addMethod(stmt);
+                    else (*(StructDeclaration*)target).addMethod(stmt);
+                }
                 if (peek().type == TokenTypes::SEMICOLON)
                     advance();
             }
             except(TokenTypes::RIGHT_BRACE);
         }
     }
-
+    Node* parsePublicNode(){
+        advance();
+        if (!check(TokenTypes::IDENTIFIER))
+            except(TokenTypes::DOUBLE_POINTS);
+        return new PublicNode;
+    }
+    Node* parsePrivateNode(){
+        advance();
+        if (!check(TokenTypes::IDENTIFIER))
+            except(TokenTypes::DOUBLE_POINTS);
+        return new PrivateNode;
+    }
     Node *parseStructStatment() {
         advance();
         Node *Name = new IdentifierNode(peek());
         except(TokenTypes::IDENTIFIER);
         StructDeclaration *Struct = new StructDeclaration(Name);
+        addObject((*(IdentifierNode*)Name).val.value);
         parseObject(0, Struct);
+
         return Struct;
     }
+    Node *parseClassStatment() {
+        advance();
+        Node *Name = new IdentifierNode(peek());
+        except(TokenTypes::IDENTIFIER);
+        ClassDeclaration *Class = new ClassDeclaration(Name);
+        parseObject(1, Class);
+        addObject((*(IdentifierNode*)Name).val.value);
+        return Class;
+    }
+    Node* parseAddressOfNode() {
+        advance();
+        Node* expression = parseExpression();
+        return new AddressNode(expression);
+    }
+    Node* parseDereferenceNode() {
+        advance();
+        Node* expression = parseLogicalOr();
+        return new DereferenceNode(expression);
+    }
+    Node* parseMemberAccessNode() {
 
+    }
     Node *parseStatment(int loop = 0, int object = 0) {
         if (isType(peek().type))
             return parseVariableDeclaration();
@@ -2587,9 +2965,16 @@ public:
             return parseDestructor();
         if (peek().type == TokenTypes::STRUCT)
             return parseStructStatment();
-        if (isIdentifier(peek().type) && position + 1 < (int) tokens.size() && tokens[position + 1].type ==
-            TokenTypes::LEFT_PAREN)
-            return parseCalleeExpression();
+        if (peek().type==TokenTypes::PUBLIC)
+            return parsePublicNode();
+        if (peek().type==TokenTypes::PRIVATE)
+            return parsePrivateNode();
+        if (peek().type==TokenTypes::CLASS)
+            return parseClassStatment();
+        if (isObject())
+            return parseVariableDeclaration(1);
+
+
         return parseExpressionStatment();
     }
 
@@ -2702,6 +3087,7 @@ string toString(string filename) {
 
     return content;
 }
+
 
 int main(int argc, char *argv[]) {
     auto start = chrono::high_resolution_clock::now();
