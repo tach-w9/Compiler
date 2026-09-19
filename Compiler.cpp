@@ -116,6 +116,8 @@ enum class TokenTypes {
     CONTINUE,
     INVALID,
     DEFAULT,
+    INCREMENT,
+    DECREMENT,
     END_OF_FILE
 };
 
@@ -354,6 +356,12 @@ string tokenTypeToString(TokenTypes type) {
             return "PUBLIC";
         case TokenTypes::PRIVATE:
             return "PRIVATE";
+        case TokenTypes::COMMENT:
+            return "COMMENT";
+        case TokenTypes::INCREMENT:
+            return "INCREMENT";
+        case TokenTypes::DECREMENT:
+            return "DECREMENT";
     }
 
     return "UNKNOWN";
@@ -471,6 +479,8 @@ std::unordered_map<std::string, TokenTypes> double_operators =
     {"-=", TokenTypes::MINUS_EQUAL},
     {"*=", TokenTypes::MULTI_EQUAL},
     {"/=", TokenTypes::DIVIDE_EQUAL},
+    {"++",TokenTypes::INCREMENT},
+    {"--",TokenTypes::DECREMENT},
 };
 
 class Lexer {
@@ -562,7 +572,7 @@ public:
     }
 
     bool isComment() {
-        return (!isAtEnd() && position + 1 < src.length() && current() == '\\' && src[position + 1] == '\\');
+        return (!isAtEnd() && position + 1 < src.length() && current() == '/' && src[position + 1] == '/');
     }
 
     bool isMultiLineCommentStart() {
@@ -579,7 +589,7 @@ public:
             advance();
             while (!isAtEnd() && current() != '\n') {
                 value += current();
-                
+
                 advance();
             }
             return Token(TokenTypes::COMMENT, start_column, (*this).line, value);
@@ -947,7 +957,7 @@ public:
             string(1, current()));
         if (isComment() || isMultiLineCommentStart()) {
             token = scanComment();
-        }{
+        }
         else if (isDigit()) {
             token = scanNumber();
         } else if (isIdentifierStart()) {
@@ -1560,7 +1570,8 @@ public:
 class ArrayInit : public Node {
 public:
     vector<Node *> args;
-
+    int isObject;
+    ArrayInit(int isObject=0):isObject(isObject){}
     void addArg(Node *arg) {
         args.push_back(arg);
     }
@@ -1574,6 +1585,11 @@ public:
         for (Node *n: args) {
             (*n).print(indent + 1);
         }
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "isObjectInitialisation: " << ((isObject)?"True":"False");
     }
 };
 
@@ -1994,7 +2010,7 @@ class ClassDeclaration: public Node {
         }
         (*Constructor).print(indent+1);
         (*Destructor).print(indent+1);
-        
+
     }
 };
 class PointerType: public Node {
@@ -2197,13 +2213,14 @@ public:
     void addObject(string thing) {
         objects.push_back(thing);
     }
-    void skipCommentes() {
-        for (int i = 0; i < tokens.size(); i++) {
-            if (tokens[i].type == TokenTypes::COMMENT)
-                tokens.erase(tokens.begin() + i);
-        }
-    }
 
+    void skipCommentes() {
+        vector<Token> cleaned;
+        for (auto &t : tokens)
+            if (t.type != TokenTypes::COMMENT)
+                cleaned.push_back(t);
+        tokens = cleaned;
+    }
     Token peek() {
         return tokens[position];
     }
@@ -2350,8 +2367,20 @@ public:
         return (type == TokenTypes::OR);
     }
 
+    int isIncrement(TokenTypes type) {
+        return (type==TokenTypes::INCREMENT);
+    }
+    int isDecrement(TokenTypes type) {
+        return (type==TokenTypes::DECREMENT);
+    }
     bool isUnary(TokenTypes type) {
-        return type == TokenTypes::PLUS || type == TokenTypes::MINUS || type == TokenTypes::NOT;
+        switch (type) {
+            case TokenTypes::PLUS:
+            case TokenTypes::MINUS:
+            case TokenTypes::NOT:
+                return 1;
+        }
+        return 0;
     }
 
     bool isParen(TokenTypes type) {
@@ -2455,6 +2484,9 @@ public:
 
         return node;
     }
+    Node* parseIncrement() {
+
+    }
     Node *parseFactor() {
         Node *left = parseUnary();
         while (isFactor(peek().type)) {
@@ -2533,8 +2565,8 @@ public:
         return new ExpressionStatment(parseExpression());
     }
 
-    Node *parseArrayAssignment(int isObject=0) {
-        ArrayInit *arr = new ArrayInit();
+    Node *parseArrayAssignment(int isObject=0,int isObjectInit=0) {
+        ArrayInit *arr = new ArrayInit(isObjectInit);
         while (!check(TokenTypes::RIGHT_BRACE)) {
             if (check(TokenTypes::LEFT_BRACE)&&!isObject){
                 advance();
@@ -2615,7 +2647,7 @@ public:
             if (check(TokenTypes::EQUAL)) {
                 advance();
                 if (except(TokenTypes::LEFT_BRACE)) {
-                    expression = parseArrayAssignment();
+                    expression = parseArrayAssignment(0,1);
                 }
             }
             (*array_declaration_node).initialize(new Initializer(expression));
@@ -2626,7 +2658,7 @@ public:
         Node *expression = new EmptyNode();
         if (peek().type == TokenTypes::EQUAL) {
             advance();
-            if (isObject&&check(TokenTypes::LEFT_BRACE)) { 
+            if (isObject&&check(TokenTypes::LEFT_BRACE)) {
                 advance();
                 expression= parseArrayAssignment(1);
             }else
@@ -2851,9 +2883,9 @@ public:
         return new EmptyNode();
     }
 
-    Node *parseCalleeExpression(int isObject=0,Node* callee=new EmptyNode()) {
+    Node *parseCalleeExpression(int isobject=0,Node* callee=new EmptyNode()) {
         Node *Callee = new EmptyNode();
-        if (isObject)
+        if (isobject)
             Callee=callee;
         else
             Callee=new IdentifierNode(peek());
@@ -2863,7 +2895,7 @@ public:
             vector<Node *> Args;
 
             while (!check(TokenTypes::RIGHT_PAREN)) {
-                if (isType(peek().type))
+                if (isType(peek().type)||(isObject()&&position+1<tokens.size()&&tokens[position+1].type==TokenTypes::IDENTIFIER))
                     Args.push_back(parseVariableDeclaration());
                 else
                     Args.push_back(parseExpression());
@@ -3036,6 +3068,7 @@ public:
         Node* expression = parseLogicalOr();
         return new DereferenceNode(expression);
     }
+
     Node *parseStatment(int loop = 0, int object = 0) {
         if (isType(peek().type))
             return parseVariableDeclaration();
@@ -3067,7 +3100,7 @@ public:
             return parsePrivateNode();
         if (peek().type==TokenTypes::CLASS)
             return parseClassStatment();
-        
+
         if (isObject() && position+1 < tokens.size()) {
     if (tokens[position+1].type == TokenTypes::LEFT_PAREN) {
         if (object) {
