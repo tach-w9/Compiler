@@ -579,6 +579,7 @@ public:
             advance();
             while (!isAtEnd() && current() != '\n') {
                 value += current();
+                
                 advance();
             }
             return Token(TokenTypes::COMMENT, start_column, (*this).line, value);
@@ -944,7 +945,10 @@ public:
             column,
             line,
             string(1, current()));
-        if (isDigit()) {
+        if (isComment() || isMultiLineCommentStart()) {
+            token = scanComment();
+        }{
+        else if (isDigit()) {
             token = scanNumber();
         } else if (isIdentifierStart()) {
             token = scanIdentifier();
@@ -958,8 +962,6 @@ public:
             token = scanString();
         } else if (current() == '\'') {
             token = scanChar();
-        } else if (isComment() || isMultiLineCommentStart()) {
-            token = scanComment();
         } else {
             advance();
         }
@@ -1012,6 +1014,11 @@ public:
 string getName(Node *n) {
     return (*n).name;
 }
+class EmptyNode : public Node {
+public:
+    void print(int indent) override {
+    }
+};
 
 class LiteralNode : public Node {
 public:
@@ -1120,6 +1127,8 @@ public:
     }
 
     void construct(Node* conster) {
+        if(dynamic_cast<EmptyNode*>(conster))
+            return;
         Initializer=conster;
     }
     void print(int indent = 0) override {
@@ -1169,11 +1178,7 @@ public:
     }
 };
 
-class EmptyNode : public Node {
-public:
-    void print(int indent) override {
-    }
-};
+
 
 class IfStatment : public Node {
 private:
@@ -1868,11 +1873,9 @@ public:
     vector<Node *> PrivateFields;
     vector<Node *> PublicFields;
     vector<Node *> Methods;
-    int isInit;
     Node *Body = new EmptyNode();
-    Node* ArrayInit;
 
-    StructDeclaration(Node *n,int isInit=0,Node* ArrayInit = new EmptyNode) : Name(n),ArrayInit(ArrayInit) {}
+    StructDeclaration(Node *n) : Name(n){}
 
     void addPrivateField(Node *field) {
         PrivateFields.push_back(field);
@@ -1933,14 +1936,6 @@ public:
         }
         (*Constructor).print(indent + 1);
         (*Destructor).print(indent + 1);
-        if (isInit) {
-            cout << endl;
-            for (int i = 0;i<indent+1;i++) {
-                cout << "  ";
-            }
-            cout << "StructIntialisation";
-            (*ArrayInit).print(indent+2);
-        }
     }
 };
 
@@ -1952,9 +1947,7 @@ class ClassDeclaration: public Node {
     vector<Node*> PrivateFields;
     vector<Node*> PublicFields;
     vector<Node*> Methods;
-    int isInit;
-    Node* ArrayInit;
-    ClassDeclaration(Node* Name,int isInit = 0,Node* array=new EmptyNode):Name(Name),ArrayInit(array){}
+    ClassDeclaration(Node* Name):Name(Name){}
     void constructor(Node* conster) {
         (*this).Constructor=conster;
     }
@@ -2001,14 +1994,7 @@ class ClassDeclaration: public Node {
         }
         (*Constructor).print(indent+1);
         (*Destructor).print(indent+1);
-        if (isInit) {
-            cout << endl;
-            for (int i = 0;i<indent+1;i++) {
-                cout << "  ";
-            }
-            cout << "StructIntialisation";
-            (*ArrayInit).print(indent+2);
-        }
+        
     }
 };
 class PointerType: public Node {
@@ -2379,6 +2365,8 @@ public:
     }
 
     Node *parsePrimary() {
+        if (isObject()&&position+1<tokens.size()&&tokens[position+1].type==TokenTypes::LEFT_PAREN)
+            return parseCalleeExpression(1,new IdentifierNode(peek()));
         if ((check(TokenTypes::MULTIPLY)||check(TokenTypes::SINGLE_AND))&&position+1<tokens.size()&&(tokens[position+1].type==TokenTypes::LEFT_PAREN||tokens[position+1].type==TokenTypes::IDENTIFIER)) {
             if (check(TokenTypes::MULTIPLY))
                 return parseDereferenceNode();
@@ -2545,10 +2533,10 @@ public:
         return new ExpressionStatment(parseExpression());
     }
 
-    Node *parseArrayAssignment() {
+    Node *parseArrayAssignment(int isObject=0) {
         ArrayInit *arr = new ArrayInit();
         while (!check(TokenTypes::RIGHT_BRACE)) {
-            if (check(TokenTypes::LEFT_BRACE)) {
+            if (check(TokenTypes::LEFT_BRACE)&&!isObject){
                 advance();
                 (*arr).addArg(parseArrayAssignment());
             } else
@@ -2638,8 +2626,9 @@ public:
         Node *expression = new EmptyNode();
         if (peek().type == TokenTypes::EQUAL) {
             advance();
-            if (isObject&&check(TokenTypes::LEFT_BRACE)) {
-
+            if (isObject&&check(TokenTypes::LEFT_BRACE)) { 
+                advance();
+                expression= parseArrayAssignment(1);
             }else
                 expression = parseExpression();
         }
@@ -2647,7 +2636,6 @@ public:
         VariableDeclarationNode* variable = new VariableDeclarationNode(initializer, type, identifier,isObject,isProp,Type);
         if (isObject)
             (*variable).construct(construct);
-        if (isObject){}
         return variable;
     }
 
@@ -3079,10 +3067,16 @@ public:
             return parsePrivateNode();
         if (peek().type==TokenTypes::CLASS)
             return parseClassStatment();
-        if (isObject()&&position+1<tokens.size()&&tokens[position+1].type==TokenTypes::LEFT_PAREN)
-            return parseCalleeExpression(1,new IdentifierNode(peek()));
-        if (isObject())
-            return parseVariableDeclaration(1);
+        
+        if (isObject() && position+1 < tokens.size()) {
+    if (tokens[position+1].type == TokenTypes::LEFT_PAREN) {
+        if (object) {
+            return parseCalleeExpression(1, new IdentifierNode(peek()));
+        }
+    } else {
+        return parseVariableDeclaration(1);
+    }
+}
 
 
         return parseExpressionStatment();
