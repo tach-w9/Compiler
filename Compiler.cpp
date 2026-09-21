@@ -120,6 +120,8 @@ enum class TokenTypes {
     INCREMENT,
     DECREMENT,
     QUESTION_MARK,
+    NEW,
+    DELETE,
 
     LEFT,
     END_OF_FILE
@@ -372,6 +374,10 @@ string tokenTypeToString(TokenTypes type) {
             return "QUESTION_MARK";
         case TokenTypes::LEFT:
             return "LEFT";
+        case TokenTypes::DELETE:
+            return "DELETE";
+        case TokenTypes::NEW:
+            return "NEW";
     }
 
     return "UNKNOWN";
@@ -443,7 +449,9 @@ std::unordered_map<std::string, TokenTypes> keywords =
     {"static", TokenTypes::STATIC},
     {"override", TokenTypes::OVERRIDE},
     {"virtual", TokenTypes::VIRTUAL},
-    {"default", TokenTypes::DEFAULT}
+    {"default", TokenTypes::DEFAULT},
+    {"delete", TokenTypes::DELETE},
+    {"new",TokenTypes::NEW},
 };
 
 std::unordered_map<char, TokenTypes> operators =
@@ -1004,6 +1012,9 @@ public:
     }
 };
 
+vector<string> TypeRelatedExpressions = {
+    "sizeof",
+};
 class Node {
 private:
     string name = "";
@@ -2336,7 +2347,95 @@ public:
         (*Expression).print(indent + 2);
     }
 };
+class NewNode: public Node {
+public:
+    Token type;
+    vector<Node*> Args;
+    NewNode(Token t):type(t){}
+    void addArg(Node* arg) {
+        Args.push_back(arg);
+    }
+    void print(int indent = 0)override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "NewNode" << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Type: " << type.value << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Arguments";
+        for (Node* n:Args) {
+            (*n).print(indent+2);
+        }
 
+    }
+};
+
+class DeleteExpression: public Node {
+public:
+    Node* Expression;
+    DeleteExpression(Node* exper):Expression(exper){}
+    void print(int indent = 0)override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "DeleteExpression";
+        (*Expression).print(indent+1);
+    }
+};
+class TypeRelatedNode: public Node {
+public:
+    Token Type;
+    int isProp;
+    Node* type;
+    TypeRelatedNode(Token type,int isprop=0,Node* Type = new EmptyNode):Type(type),isProp(isprop),type(Type){}
+};
+class ExpressionRelatedNode: public Node {
+public:
+    Node* Expression;
+    ExpressionRelatedNode(Node* exper):Expression(exper){}
+
+};
+class SizeOfTypeNode: public TypeRelatedNode {
+public:
+    void print(int indent = 0)override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "SizeOfTypeNode";
+        if (!isProp) {
+            cout << endl;
+            for (int i = 0;i<indent+1;i++) {
+                cout << "  ";
+            }
+            cout << "Type: " << Type.value;
+        }else
+            (*type).print(indent+1);
+
+    }
+
+
+    SizeOfTypeNode(Token type, int is_prop, Node * node):TypeRelatedNode(type,is_prop,node){}
+};
+class SizeOfExpressionnode: public ExpressionRelatedNode {
+public:
+    void print(int indent = 0)override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "SizeOfExpressionNode";
+        (*Expression).print(indent+1);
+    }
+    SizeOfExpressionnode(Node * node):ExpressionRelatedNode(node){}
+};
 class Program : public Node {
 public:
     vector<Node *> nodes;
@@ -2541,7 +2640,13 @@ public:
     int isDecrement(TokenTypes type) {
         return (type == TokenTypes::DECREMENT);
     }
-
+    int isTypeRelatedExpression(Token token) {
+        for (const string& n:TypeRelatedExpressions) {
+            if (token.value==n)
+                return 1;
+        }
+        return 0;
+    }
     bool isUnary(TokenTypes type) {
         switch (type) {
             case TokenTypes::PLUS:
@@ -2595,7 +2700,19 @@ public:
 
         return expr;
     }
+
+    Node* parseDeleteExpression() {
+        advance();
+        Node* exper = parseExpression();
+        return new DeleteExpression(exper);
+    }
     Node *parsePrimary() {
+        if (isTypeRelatedExpression(peek()))
+            return parseTypeRelatedExpressions();
+        if (check(TokenTypes::NEW)&&position+1<tokens.size()&&tokens[position+1].type==TokenTypes::IDENTIFIER)
+            return parseNewNode();
+        if (check(TokenTypes::DELETE))
+            return parseDeleteExpression();
         if (check(TokenTypes::LEFT_PAREN) &&
     position + 1 < tokens.size() &&
     isType(tokens[position+1].type)||
@@ -2705,6 +2822,11 @@ public:
 
                 continue;
             }
+            if (check(TokenTypes::DELETE)) {
+                advance();
+                Node* exper = parseExpression();
+                return new DeleteExpression(exper);
+            }
 
             break;
         }
@@ -2793,8 +2915,6 @@ public:
         }
         return left;
     }
-
-
 
     Node *parseExpression() {
         return parseAssignment();
@@ -3188,7 +3308,7 @@ public:
         CallExpression *call = new CallExpression(callee);
 
         for (Node *arg: Args)
-            call->addArg(arg);
+            (*call).addArg(arg);
 
         return call;
     }
@@ -3312,6 +3432,86 @@ public:
         return new DereferenceNode(expression);
     }
 
+    Node* parseNewNode() {
+        advance();
+        Token type = peek();
+        advance();
+        if (check(TokenTypes::LEFT_PAREN)) {
+            advance();
+
+            vector<Node *> Args;
+
+            while (!check(TokenTypes::RIGHT_PAREN)) {
+                if (isType(peek().type)&&position+1<tokens.size()&&tokens[position+1].type==TokenTypes::IDENTIFIER)
+                    Args.push_back(parseVariableDeclaration());
+                else
+                    Args.push_back(parseExpression());
+
+                if (check(TokenTypes::COMMA))
+                    advance();
+                else
+                    break;
+            }
+
+            except(TokenTypes::RIGHT_PAREN);
+
+            NewNode* node = new NewNode(type);
+            for (Node *arg: Args)
+                (*node).addArg(arg);
+
+            return node;
+        }
+        return new NewNode(type);
+    }
+    Node* parseTypeRelatedExpressions() {
+        Token current = peek();
+        advance();
+
+        if (except(TokenTypes::LEFT_PAREN)) {
+            vector<Node *> Args;
+
+            if (isType(peek().type)||isObject()) {
+                Token type=peek();
+                advance();
+                Node* Type=new EmptyNode;
+                int isProp = 0;
+                if (check(TokenTypes::MULTIPLY)) {
+                    Type = new PointerType(type);
+                    isProp = 1;
+                    advance();
+                } else if (check(TokenTypes::POWER)) {
+                    int ptrs = 2;
+                    advance();
+                    while (check(TokenTypes::POWER) || check(TokenTypes::MULTIPLY)) {
+                        if (check(TokenTypes::MULTIPLY))
+                            ptrs++;
+                        else
+                            ptrs += 2;
+                        advance();
+                    }
+                    Node *ptr = new PointerType(type);
+                    for (int i = 0; i < ptrs - 1; i++) {
+                        ptr = new PointerType(type, 1, ptr);
+                    }
+                    Type = ptr;
+                    isProp = 1;
+                }
+                except(TokenTypes::RIGHT_PAREN);
+                TypeRelatedNode* node = nullptr;
+                if (current.value=="sizeof")
+                    node = new SizeOfTypeNode(type,isProp,Type);
+                return node;
+            }else {
+                Node* expression = parseExpression();
+                except(TokenTypes::RIGHT_PAREN);
+                ExpressionRelatedNode* node = nullptr;
+                if (current.value=="sizeof")
+                    node = new SizeOfExpressionnode(expression);
+                return node;
+            }
+        }
+        return new EmptyNode();
+    }
 
     Node *parseStatment(int loop = 0, int object = 0) {
         if (isType(peek().type))
