@@ -122,6 +122,8 @@ enum class TokenTypes {
     QUESTION_MARK,
     NEW,
     DELETE,
+    DOUBLE_LEFT,
+    DOUBLE_RIGHT,
 
     LEFT,
     END_OF_FILE
@@ -378,6 +380,10 @@ string tokenTypeToString(TokenTypes type) {
             return "DELETE";
         case TokenTypes::NEW:
             return "NEW";
+        case TokenTypes::DOUBLE_LEFT:
+            return "DOUBLE_LEFT";
+        case TokenTypes::DOUBLE_RIGHT:
+            return "DOUBLE_RIGHT";
     }
 
     return "UNKNOWN";
@@ -452,6 +458,7 @@ std::unordered_map<std::string, TokenTypes> keywords =
     {"default", TokenTypes::DEFAULT},
     {"delete", TokenTypes::DELETE},
     {"new",TokenTypes::NEW},
+    {"enum",TokenTypes::ENUM},
 };
 
 std::unordered_map<char, TokenTypes> operators =
@@ -502,6 +509,8 @@ std::unordered_map<std::string, TokenTypes> double_operators =
     {"%=", TokenTypes::LEFT_EQUAL},
     {"++", TokenTypes::INCREMENT},
     {"--", TokenTypes::DECREMENT},
+    {"<<",TokenTypes::DOUBLE_LEFT},
+    {">>",TokenTypes::DOUBLE_RIGHT},
 };
 
 class Lexer {
@@ -2858,7 +2867,7 @@ public:
 
     Node *parseComparison() {
         Node *left = parseTerm();
-        while (isComparison(peek().type)) {
+        while (isComparison(peek().type)||peek().type==TokenTypes::DOUBLE_LEFT||peek().type==TokenTypes::DOUBLE_RIGHT) {
             Token op = peek();
             advance();
             Node *right = parseTerm();
@@ -2880,7 +2889,7 @@ public:
 
     Node *parseLogicalOr() {
         Node *left = parseLogicalAnd();
-        while (isLogicalOr(peek().type)) {
+        while (isLogicalOr(peek().type)||peek().type==TokenTypes::SINGLE_OR) {
             Token op = peek();
             advance();
             Node *right = parseLogicalAnd();
