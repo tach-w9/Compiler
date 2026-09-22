@@ -2477,12 +2477,12 @@ class EnumDeclarationNode: public Node{
         for(int i = 0;i<indent+1;i++){
             cout << "  ";
         }
-        
+
         cout << "Members";
         for(Node* n:members){
             (*n).print(indent+2);
         }
-        
+
     }
 };
 class EnumMember: public Node{
@@ -2510,6 +2510,30 @@ class EnumMember: public Node{
             cout << "Value";
             (*Value).print(indent+2);
         }
+    }
+};
+class QualifiedAccessNode: public Node {
+public:
+    Node* Scoop;
+    Node* Member;
+    QualifiedAccessNode(Node* s,Node* mem):Member(mem),Scoop(s){}
+    void print(int indent = 0)override {
+        cout << endl;
+        for (int i = 0;i<indent;i++) {
+            cout << "  ";
+        }
+        cout << "QualifiedAccessNode" << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Scoop";
+        (*Scoop).print(indent+2);
+        cout << endl;
+        for (int i = 0;i<indent+1;i++) {
+            cout << "  ";
+        }
+        cout << "Member";
+        (*Member).print(indent+2);
     }
 };
 class Program : public Node {
@@ -2656,7 +2680,7 @@ public:
         return (type == TokenTypes::IDENTIFIER);
     }
 
-    int isType(TokenTypes type) {
+    int isType(TokenTypes type,int isQualified = 1) {
         switch (type) {
             case TokenTypes::TYPE_BOOL:
             case TokenTypes::TYPE_CHAR:
@@ -2666,6 +2690,15 @@ public:
             case TokenTypes::TYPE_STRING:
             case TokenTypes::VOID:
                 return 1;
+        }
+        if (isObject()) {
+            if (position+3<tokens.size()&&tokens[position+1].type==TokenTypes::DOUBLE_POINTS&&tokens[position+2].type==TokenTypes::DOUBLE_POINTS&&tokens[position+1].type==TokenTypes::IDENTIFIER) {
+                advance();
+                advance();
+                advance();
+                advance();
+                return 1;
+            }
         }
         return 0;
     }
@@ -3028,6 +3061,7 @@ public:
         }
         Token type = peek();
         advance();
+
         int isProp = 0;
         Node *Type = new EmptyNode();
         if (check(TokenTypes::SINGLE_AND)) {
@@ -3626,7 +3660,7 @@ public:
         except(TokenTypes::RIGHT_BRACE);
         addObject((*(IdentifierNode *) Name).val.value);
         return Enum;
-        
+
     }
 
     Node *parseStatment(int loop = 0, int object = 0) {
