@@ -2445,6 +2445,73 @@ public:
     }
     SizeOfExpressionnode(Node * node):ExpressionRelatedNode(node){}
 };
+class EnumDeclarationNode: public Node{
+    public:
+    Node*Name;
+    vector<Node*> members;
+    int isUnder;
+    Token UnderType;
+    EnumDeclarationNode(Node* name,int is,Token utype):Name(name),isUnder(is),UnderType(utype){}
+    void addMember(Node* mem){
+        members.push_back(mem);
+    }
+    void print(int indent = 0) override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "EnumDeclarationNode" << endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "Name";
+        (*Name).print(indent+2);
+        if(isUnder){
+            cout << endl;
+            for(int i = 0;i<indent+1;i++){
+                cout << "  ";
+            }
+            cout << "UnderType: " << UnderType.value;
+        }
+        cout << endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        
+        cout << "Members";
+        for(Node* n:members){
+            (*n).print(indent+2);
+        }
+        
+    }
+};
+class EnumMember: public Node{
+    public:
+    Node* Name;
+    int isInit;
+    Node* Value;
+    EnumMember (Node* n,int is=0,Node* val= new EmptyNode):Name(n),isInit(is),Value(val){}
+    void print(int indent = 0) override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "EnumMember" << endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "Name";
+        (*Name).print(indent+2);
+        if(isInit){
+            cout << endl;
+            for(int i = 0;i<indent+1;i++){
+                cout << "  ";
+            }
+            cout << "Value";
+            (*Value).print(indent+2);
+        }
+    }
+};
 class Program : public Node {
 public:
     vector<Node *> nodes;
@@ -3521,6 +3588,46 @@ public:
         }
         return new EmptyNode();
     }
+    Node* parseEnumDeclaration(){
+        advance();
+        Node* Name = new IdentifierNode(peek());
+        except(TokenTypes::IDENTIFIER);
+        Token UnderType =  Token(TokenTypes::UNKNOWN,0,0,"");
+        int isUnder=0;
+        if(check(TokenTypes::DOUBLE_POINTS)){
+            advance();
+            if(!isType(peek().type)&&!isObject())
+                throw std::runtime_error("Expected an Underlyed type!");
+            else{
+                UnderType = peek();
+                isUnder=1;
+                advance();
+            }
+        }
+        except(TokenTypes::LEFT_BRACE);
+        Node* Enum = new EnumDeclarationNode(Name,isUnder,UnderType);
+        while(!check(TokenTypes::RIGHT_BRACE)){
+            if(check(TokenTypes::IDENTIFIER)){
+                Node* name = new IdentifierNode(peek());
+                advance();
+                Node* Value = new EmptyNode;
+                int isInit = 0;
+                if(check(TokenTypes::EQUAL)){
+                    advance();
+                    Value = parseExpression();
+                    isInit = 1;
+                }
+                (*(EnumDeclarationNode*)Enum). addMember(new EnumMember(name,isInit,Value));
+                if(check(TokenTypes::COMMA))
+                        advance();
+            }else if(check(TokenTypes::COMMA))
+                except(TokenTypes::IDENTIFIER);
+        }
+        except(TokenTypes::RIGHT_BRACE);
+        addObject((*(IdentifierNode *) Name).val.value);
+        return Enum;
+        
+    }
 
     Node *parseStatment(int loop = 0, int object = 0) {
         if (isType(peek().type))
@@ -3563,6 +3670,8 @@ public:
                 return parseVariableDeclaration(1);
             }
         }
+        if(peek().type==TokenTypes::ENUM)
+            return parseEnumDeclaration();
 
 
         return parseExpressionStatment();
@@ -3681,7 +3790,7 @@ string toString(string filename) {
 
 int main(int argc, char *argv[]) {
     auto start = chrono::high_resolution_clock::now();
-    string filename = argv[1];
+    string filename = "test.txt";
     string source = toString(filename);
     cout << "Source is: " << endl
             << source << endl;
