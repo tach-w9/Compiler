@@ -125,7 +125,7 @@ enum class TokenTypes
     DELETE,
     DOUBLE_LEFT,
     DOUBLE_RIGHT,
-
+    RIGHT,
     LEFT,
     END_OF_FILE
 };
@@ -389,6 +389,8 @@ string tokenTypeToString(TokenTypes type)
         return "DOUBLE_LEFT";
     case TokenTypes::DOUBLE_RIGHT:
         return "DOUBLE_RIGHT";
+    case TokenTypes::RIGHT:
+        return "RIGHT";
     }
 
     return "UNKNOWN";
@@ -491,7 +493,9 @@ std::unordered_map<char, TokenTypes> operators =
         {'?', TokenTypes::QUESTION_MARK},
         {'\n', TokenTypes::NEW_LINE},
         {' ', TokenTypes::SPACE},
-        {'\t', TokenTypes::TAB}};
+        {'\t', TokenTypes::TAB},
+        {'<',TokenTypes::LEFT},
+        {'>',TokenTypes::RIGHT}};
 
 std::unordered_map<std::string, TokenTypes> double_operators =
     {
@@ -511,8 +515,6 @@ std::unordered_map<std::string, TokenTypes> double_operators =
         {"%=", TokenTypes::LEFT_EQUAL},
         {"++", TokenTypes::INCREMENT},
         {"--", TokenTypes::DECREMENT},
-        {"<<", TokenTypes::DOUBLE_LEFT},
-        {">>", TokenTypes::DOUBLE_RIGHT},
 };
 
 class Lexer
@@ -1742,11 +1744,18 @@ public:
     vector<Node *> Parameters;
     Node *Body;
     Node *Type;
+    int isGeneric = 0;
+    vector<Node*> GenericParameters;
+
 
     FunctionStatment(Node *t, Node *b, Node *n) : Type(t), Name(n), Body(b)
     {
+        setName("FunctionStatment");
     }
-
+    void addGenericParam(Node* param){
+        isGeneric=1;
+        GenericParameters.push_back(param);
+    }
     void addParam(Node *p)
     {
         Parameters.push_back(p);
@@ -1774,6 +1783,17 @@ public:
         }
         cout << "Name";
         (*Name).print(indent + 2);
+        if(isGeneric){
+            cout << endl;
+            for(int i = 0;i<indent+1;i++){
+                cout << "  ";
+            }
+            cout << "GenericParameters";
+
+            for(Node* n:GenericParameters){
+                (*n).print(indent+2);
+            }
+        }
         cout << endl;
         for (int i = 0; i < indent + 1; i++)
         {
@@ -2177,7 +2197,7 @@ public:
 class MethodStatment : public Node
 {
 private:
-    string name = "MethodStatmen";
+    string name = "MethodStatment";
 
 public:
     Node *Name;
@@ -2188,13 +2208,19 @@ public:
     int isOverride;
     int isStatic;
     int isVirtual;
+    int isGeneric = 0;
 
+    vector<Node*> GenericParameters;
     MethodStatment(Node *t, Node *b, Node *n, int f = 0, int o = 0, int s = 0, int v = 0) : Type(t), Name(n), Body(b),
                                                                                             isFriend(f), isOverride(o), isStatic(s), isVirtual(v)
     {
         setName("MethodStatment");
     }
 
+    void addGenericParam(Node* param){
+        isGeneric=1;
+        GenericParameters.push_back(param);
+    }
     void addParam(Node *p)
     {
         Parameters.push_back(p);
@@ -2207,7 +2233,7 @@ public:
         {
             cout << "  ";
         }
-        cout << "Method";
+        cout << "Method" << endl;
         for (int i = 0; i < indent + 1; i++)
         {
             cout << "  ";
@@ -2221,6 +2247,16 @@ public:
         }
         cout << "Name";
         (*Name).print(indent + 2);
+        if(isGeneric){
+            cout << endl;
+            for(int i = 0;i<indent+1;i++){
+                cout << "  ";
+            }
+            cout << "GenericParameters";
+            for(Node* n:GenericParameters){
+                (*n).print(indent+2);
+            }
+        }
         cout << endl;
         for (int i = 0; i < indent + 1; i++)
         {
@@ -2304,10 +2340,16 @@ public:
     vector<Node *> PublicFields;
     vector<Node *> Methods;
     Node *Body = new EmptyNode();
+    int isGeneric=0;
+    vector<Node*> GenericParameters;
 
     StructDeclaration(Node *n) : Name(n)
     {
         setName("StructDeclarationNode");
+    }
+    void addGenericParam(Node* param){
+        isGeneric=1;
+        GenericParameters.push_back(param);
     }
 
     void addPrivateField(Node *field)
@@ -2354,6 +2396,16 @@ public:
         }
         cout << "Name";
         (*Name).print(indent + 2);
+        if(isGeneric){
+            cout << endl;
+            for(int i = 0;i<indent+1;i++){
+                cout << "  ";
+            }
+            cout << "GenericParameters";
+            for(Node* n:GenericParameters){
+                (*n).print(indent+2);
+            }
+        }
         cout << endl;
         for (int i = 0; i < indent + 1; i++)
         {
@@ -2398,10 +2450,16 @@ public:
     vector<Node *> PrivateFields;
     vector<Node *> PublicFields;
     vector<Node *> Methods;
+    int isGeneric=0;
+    vector<Node*> GenericParameters;
 
     ClassDeclaration(Node *Name) : Name(Name)
     {
         setName("ClassDeclarationNode");
+    }
+    void addGenericParam(Node* param){
+        isGeneric=1;
+        GenericParameters.push_back(param);
     }
 
     void constructor(Node *conster)
@@ -2439,6 +2497,22 @@ public:
         cout << "ClassDeclaration" << endl;
         for (int i = 0; i < indent + 1; i++)
         {
+            cout << "  ";
+        }
+        cout << "Name";
+        (*Name).print(indent+2);
+        if(isGeneric){
+            cout << endl;
+            for(int i = 0;i<indent+1;i++){
+                cout << "  ";
+            }
+            cout << "GenericParameters";
+            for(Node* n:GenericParameters){
+                (*n).print(indent+2);
+            }
+        }
+        cout << endl;
+        for(int i = 0;i<indent+1;i++){
             cout << "  ";
         }
         cout << "PrivateFields";
@@ -2952,6 +3026,49 @@ public:
         (*Member).print(indent + 2);
     }
 };
+
+class GenericTypeNode: public Node{
+public:
+    Node* Type;
+    vector<Node*> args;
+    GenericTypeNode(Node* n):Type(n){}
+    void addArg(Node* node){
+        args.push_back(node);
+    }
+    void print(int indent = 0)override{
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "GenericTypeNode" << endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "Type";
+        (*Type).print(indent+2);
+        cout << endl;
+        for(int i = 0;i<indent+1;i++){
+            cout << "  ";
+        }
+        cout << "Arguments";
+        for(Node* n:args){
+            (*n).print(indent+2);
+        } 
+    }
+};
+class GenericParameterNode: public Node{
+public:
+    Node* param;
+    GenericParameterNode(Node* par):param(par){}
+    void print(int indent=0){
+        cout << endl;
+        for(int i = 0;i<indent;i++){
+            cout << "  ";
+        }
+        cout << "GenericParameterNode";
+        (*param).print(indent+1);
+    }
+};
 class Program : public Node
 {
 public:
@@ -2988,6 +3105,7 @@ struct QualifiedObject
     QualifiedObject(string p, string c) : parentPath(p), childName(c) {}
 };
 
+
 class Parser
 {
 public:
@@ -2996,12 +3114,18 @@ public:
     vector<string> objects;
     vector<QualifiedObject> QualifiedObjects;
     vector<string> scopeStack;
+    vector<string> genericScope;
 
     Parser(vector<Token> tokens) : tokens(tokens)
     {
         skipCommentes();
     }
 
+    int isGenericParam(const string& name) {
+        for (const string& g : genericScope)
+            if (g == name) return 1;
+        return 0;
+    }
     string currentPath()
     {
         string path = "";
@@ -3290,6 +3414,7 @@ public:
     Node *parseQualfiedAccessExpression()
     {
         Node *Type = new IdentifierNode(peek());
+        advance();
         while (check(TokenTypes::DOUBLE_POINTS))
         {
             advance();
@@ -3302,9 +3427,8 @@ public:
     }
     Node *parsePrimary()
     {
-        if (check(TokenTypes::IDENTIFIER) && position + 1 < tokens.size() && tokens[position + 1].type == TokenTypes::DOUBLE_POINTS)
-        {
-        }
+        if (check(TokenTypes::IDENTIFIER) && position + 2 < tokens.size() && tokens[position + 1].type == TokenTypes::DOUBLE_POINTS && tokens[position + 2].type == TokenTypes::DOUBLE_POINTS)
+            return parseQualfiedAccessExpression();
         if (isTypeRelatedExpression(peek()))
             return parseTypeRelatedExpressions();
         if (check(TokenTypes::NEW) && position + 1 < tokens.size() && tokens[position + 1].type == TokenTypes::IDENTIFIER)
@@ -3323,8 +3447,6 @@ public:
                 lookahead++;
             return parseCast();
         }
-        if (isObject() && position + 1 < tokens.size() && tokens[position + 1].type == TokenTypes::LEFT_PAREN)
-            return parseCalleeExpression(1, new IdentifierNode(peek()));
         if ((check(TokenTypes::MULTIPLY) || check(TokenTypes::SINGLE_AND)) && position + 1 < tokens.size() && (tokens[position + 1].type == TokenTypes::LEFT_PAREN || tokens[position + 1].type == TokenTypes::IDENTIFIER))
         {
             if (check(TokenTypes::MULTIPLY))
@@ -3410,7 +3532,11 @@ public:
             }
             if (check(TokenTypes::LEFT_PAREN))
             {
-                node = parseCalleeExpression(node);
+                //if(position+1<tokens.size()&&tokens[position+1].type==TokenTypes::SMALLER_THAN)
+                
+                //else
+                    node = parseCalleeExpression(node);
+                
                 continue;
             }
             if (check(TokenTypes::LEFT_BRACKET))
@@ -3567,7 +3693,7 @@ public:
     Node *parseType(int isVariableDeclaration = 0)
     {
         Token type = peek();
-        if (!isType(peek().type) && !isObject())
+        if (!isType(peek().type) && !isObject()&&!isGenericParam(peek().value))
             throw std::runtime_error("Expected Type in: " + peek().value + " at line: " + to_string(peek().line) + ", coulmn: " + to_string(peek().column) + ", Type: " + tokenTypeToString(type.type));
         advance();
         Node *Type = new IdentifierNode(type);
@@ -3588,6 +3714,18 @@ public:
                                          (*(IdentifierNode *)Member).val.value + "' on Object '" + currentFullPath + "' at line: " + to_string((*(IdentifierNode *)Member).val.line) + " column: " + to_string((*(IdentifierNode *)Member).val.column));
             
             currentFullPath = currentFullPath + "::" + memberName;
+        }
+        if(check(TokenTypes::SMALLER_THAN)){
+            advance();
+            Node* shii = new GenericTypeNode(Type);
+            while(!check(TokenTypes::BIGGER_THAN)){
+                (*(GenericTypeNode*)shii).addArg(parseType(1));
+                if(check(TokenTypes::COMMA))
+                    advance();
+            }
+            except(TokenTypes::BIGGER_THAN);
+            Type=shii;
+            
         }
 
         if (check(TokenTypes::SINGLE_AND) && isVariableDeclaration)
@@ -3763,7 +3901,7 @@ public:
         }
         return new EmptyNode();
     }
-
+    
     Node *parseElseStatment(int loop = 0)
     {
         advance();
@@ -3901,13 +4039,25 @@ public:
         if (except(TokenTypes::IDENTIFIER))
         {
             Node *Name = new IdentifierNode(name);
-
+            StructDeclaration* testShiii = new StructDeclaration(Name);
+            int genericCount=0;
+            if(check(TokenTypes::SMALLER_THAN)){
+                parseGenericDeclaration(testShiii);
+                for (Node* n : (*(StructDeclaration*)testShiii).GenericParameters) {
+                    genericScope.push_back((*(IdentifierNode*)n).val.value);
+                    genericCount++;
+                }
+            };
+            
             if (check(TokenTypes::LEFT_PAREN))
             {
                 vector<Node *> params = parseParameters();
-                Node *type = parseType();
+                Node *type = new EmptyNode();
+                if (isType(peek().type) || isObject() || isGenericParam(peek().value))
+                    type = parseType();
 
                 Node *Body = parseBlock();
+                for (int i = 0; i < genericCount; i++) genericScope.pop_back();
                 if (object)
                 {
                     MethodStatment *method = new MethodStatment(type, Body, Name, isFriend, isOverride, isStatic,
@@ -3916,9 +4066,15 @@ public:
                     {
                         (*method).addParam(params[i]);
                     }
+                    if((*testShiii).isGeneric)
+                        for(Node* n:(*testShiii).GenericParameters)
+                            (*method).addGenericParam(n);
                     return method;
                 }
                 FunctionStatment *fun = new FunctionStatment(type, Body, Name);
+                if((*testShiii).isGeneric)
+                    for(Node* n:(*testShiii).GenericParameters)
+                        (*fun).addGenericParam(n);
                 for (int i = 0; i < params.size(); i++)
                 {
                     (*fun).addParam(params[i]);
@@ -4169,6 +4325,24 @@ public:
         return new PrivateNode;
     }
 
+    void parseGenericDeclaration(Node* shii){
+        advance();
+        while(!check(TokenTypes::BIGGER_THAN)){
+            Node* arg = new IdentifierNode(peek());
+            except(TokenTypes::IDENTIFIER);
+            if (getName(shii) == "ClassDeclarationNode")
+                (*(ClassDeclaration*)shii).addGenericParam(arg);
+            else if(getName(shii)=="StructDeclarationNode")
+                (*(StructDeclaration*)shii).addGenericParam(arg);
+            else if(getName(shii)=="MethodStatment")
+                (*(MethodStatment*)shii).addGenericParam(arg);
+            else if(getName(shii)=="FunctionStatment")
+                (*(FunctionStatment*)shii).addGenericParam(arg);
+            if(check(TokenTypes::COMMA))
+                advance();
+        }
+        except(TokenTypes::BIGGER_THAN);
+    }
     Node *parseStructStatment()
     {
         advance();
@@ -4177,9 +4351,17 @@ public:
         StructDeclaration *Struct = new StructDeclaration(Name);
         addObject((*(IdentifierNode *)Name).val.value);
         scopeStack.push_back((*(IdentifierNode *)Name).val.value);
+        int genericCount=0;
+        if(check(TokenTypes::SMALLER_THAN)){
+            parseGenericDeclaration(Struct);
+            for (Node* n : (*(StructDeclaration*)Struct).GenericParameters) {
+                genericScope.push_back((*(IdentifierNode*)n).val.value);
+                genericCount++;
+            }
+        }
         parseObject(0, Struct);
         scopeStack.pop_back();
-
+        for (int i = 0; i < genericCount; i++) genericScope.pop_back();
         return Struct;
     }
 
@@ -4190,9 +4372,18 @@ public:
         except(TokenTypes::IDENTIFIER);
         ClassDeclaration *Class = new ClassDeclaration(Name);
         scopeStack.push_back((*(IdentifierNode *)Name).val.value);
+        int genericCount=0;
+        if(check(TokenTypes::SMALLER_THAN)){
+            parseGenericDeclaration(Class);
+            for (Node* n : (*(ClassDeclaration*)Class).GenericParameters) {
+                genericScope.push_back((*(IdentifierNode*)n).val.value);
+                genericCount++;
+            }
+        }
         parseObject(1, Class);
         scopeStack.pop_back();
         addObject((*(IdentifierNode *)Name).val.value);
+        for (int i = 0; i < genericCount; i++) genericScope.pop_back();
         return Class;
     }
 
